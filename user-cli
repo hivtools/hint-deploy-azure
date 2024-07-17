@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -e
+
+## Try this with
+# user-cli add-user test.user@example.com password 
+
+COMMAND_ARGS="$@"
+HINT_RESOURCE_GROUP="nmHint-RG"
+HINT_STORAGE_ACCOUNT="hintappstorage"
+
+# Get the key for storage account
+STORAGE_ACCOUNT_KEY=$(az storage account keys list   --resource-group $HINT_RESOURCE_GROUP --account-name $HINT_STORAGE_ACCOUNT | jq -r '.[0].value')
+
+# Read env vars we need out of avenir auth server
+fetch_and_set_env_vars() {
+    local AVENIR_AUTH_URL="https://api.authadmin.avenirhealth.org/v1/api/roles/fetchuserskeys"
+
+    if [ -z "$AVENIR_ACCESS_TOKEN" ]; then
+        echo "Error: 'AVENIR_ACCESS_TOKEN' environment variable is not set."
+        exit 1
+    fi
+
+    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Content-Type: application/json" -d "{\"keyAccessToken\": \"$AVENIR_ACCESS_TOKEN\"}" "$AVENIR_AUTH_URL")
+
+    HTTP_CODE=$(tail -n1 <<< "$RESPONSE")  # get the last line
+    CONTENT=$(sed '$ d' <<< "$RESPONSE")
+
+    if [ "$HTTP_CODE" -ne 200 ]; then
+        echo "Error: Failed to fetch data from URL. HTTP status code: $HTTP_CODE"
+            cat CONTENT  # Print the response for debugging
+            exit 1
+    fi
+
+    # Extract values from the response and set environment variables
+    VALUES=$(jq -r '.keys[] | select(.name == "AVENIR_NM_DB_PASSWORD" or
+        .name == "AVENIR_NM_EMAIL_PASSWORD" or
+        .name == "AVENIR_NM_ISSUE_REPORT_URL") | "\(.name)=\(.value)"' <<< "$CONTENT")
+
+    if [ -z "$VALUES" ]; then
+        echo "Error: Required keys not found in the response."
+        exit 1
+    fi
+
+    # Set the extracted values as environment variables
+    while IFS= read -r line; do
+        export $line
+    done <<< "$VALUES"
+
+    echo "Environment read from Avenir Auth server"
+}
+
+# Need to conncet to DB, and to have the config in a volume
+az container create \
+    --resource-group $HINT_RESOURCE_GROUP \
+    --name hint-user-cli \
+    --image ghcr.io/mrc-ide/hint-user-cli:azure-entrypoint \
+    --command-line "/bin/sh -c '/userCLI/bin/userCLI $COMMAND_ARGS'" \
+    -e DB_URL=jdbc:postgresql://nm-hint-db.postgres.database.azure.com/hint \
+    HINTR_URL=http://nm-hintr \
+    APPLICATION_URL=https://nm-hint.icyfield-a41ed3df.eastus.azurecontainerapps.io \
+    AVENIR_NM_EMAIL_PASSWORD=$AVENIR_NM_EMAIL_PASSWORD \
+    AVENIR_NM_ISSUE_REPORT_URL=$AVENIR_NM_ISSUE_REPORT_URL \
+    AVENIR_NM_DB_PASSWORD=$AVENIR_NM_DB_PASSWORD \
+    --restart-policy Never \
+    --azure-file-volume-share-name config-share \
+    --azure-file-volume-account-name $HINT_STORAGE_ACCOUNT \
+    --azure-file-volume-account-key $STORAGE_ACCOUNT_KEY \
+    --azure-file-volume-mount-path /etc/hint \
+    --subnet "/subscriptions/f5e355bd-a7e7-4cfd-ad9f-ca5bc2ce3af2/resourceGroups/nmHint-RG/providers/Microsoft.Network/virtualNetworks/nm-hint-nw/subnets/nm-hint-db-migrate-subnet"

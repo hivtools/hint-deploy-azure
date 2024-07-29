@@ -1,4 +1,4 @@
-@description('Vnet settings object')
+@description('VNet settings object')
 param vnetSettings object
 
 resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
@@ -13,6 +13,8 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
   }
 }
 
+@description('Create configured subnets')
+@batchSize(1)
 resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = [for subnet in vnetSettings.subnets: {
   name: subnet.name
   parent: vnet
@@ -27,7 +29,7 @@ resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = [for s
       }
     ]
     privateEndpointNetworkPolicies: subnet.public ? 'Disabled' : 'Enabled'
-    privateLinkServiceNetworkPolicies: subnet.public? 'Disabled' : 'Enabled'
+    privateLinkServiceNetworkPolicies: subnet.public ? 'Disabled' : 'Enabled'
   }
 }]
 
@@ -43,6 +45,3 @@ output vnetInfo object = {
   }
   subnets: toObject(vnetInfoArray, entry => entry.name)
 }
-
-// @description('Composing the subnetId')
-// var postgresSubnetId = '${vnetLink.properties.virtualNetwork.id}/subnets/${hintDbSubnetName}'

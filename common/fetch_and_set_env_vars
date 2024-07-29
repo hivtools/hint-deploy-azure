@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -e
+
+# Check if AVENIR_ACCESS_TOKEN is set, and prompt if not
+check_av_access_token() {
+  if [ -z "$AVENIR_ACCESS_TOKEN" ]; then
+    echo "AVENIR_ACCESS_TOKEN is not set."
+    read -sp 'Please enter AVENIR_ACCESS_TOKEN: ' AVENIR_ACCESS_TOKEN
+    export AVENIR_ACCESS_TOKEN
+    echo
+  fi
+}
+
+check_av_access_token
+
+# Check if at least one argument is provided
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <key1> [key2] [key3] ..."
+    exit 1
+fi
+
+AVENIR_AUTH_URL="https://api.authadmin.avenirhealth.org/v1/api/roles/fetchuserskeys"
+
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Content-Type: application/json" -d "{\"keyAccessToken\": \"$AVENIR_ACCESS_TOKEN\"}" "$AVENIR_AUTH_URL")
+
+HTTP_CODE=$(tail -n1 <<<"$RESPONSE") # get the last line
+CONTENT=$(sed '$ d' <<<"$RESPONSE")
+
+if [ "$HTTP_CODE" -ne 200 ]; then
+    echo "Error: Failed to fetch data from URL. HTTP status code: $HTTP_CODE"
+    cat CONTENT # Print the response for debugging
+    exit 1
+fi
+
+# Build jq filter based on command line arguments
+FILTER=''
+for KEY in "$@"; do
+    if [ -n "$FILTER" ]; then
+        FILTER+=' or '
+    fi
+    FILTER+=".name == \"$KEY\""
+done
+
+# Extract values from the response and set environment variables
+VALUES=$(jq -r ".keys[] | select($FILTER) | \"\(.name)=\(.value)\"" <<<"$CONTENT")
+
+# Check for missing keys
+MISSING_KEYS=()
+for KEY in "$@"; do
+    if ! grep -q "$KEY" <<<"$VALUES"; then
+        MISSING_KEYS+=("$KEY")
+    fi
+done
+
+
+if [ ${#MISSING_KEYS[@]} -gt 0 ]; then
+    echo "Error: Required keys not found in the response: ${MISSING_KEYS[*]}"
+    exit 1
+fi
+
+# Set the extracted values as environment variables
+while IFS= read -r line; do
+    export "$line"
+done <<<"$VALUES"
+
+echo "Environment read from Avenir Auth server"

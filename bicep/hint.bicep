@@ -185,6 +185,10 @@ param storageSettings object = {
       name: 'config'
       mountAccessMode: 'ReadWrite'
     }
+    redis: {
+      name: 'redis'
+      mountAccessMode: 'ReadWrite'
+    }
   }
 }
 
@@ -208,6 +212,9 @@ param azureCRUsername string
 @secure()
 @description('Azure Registry password')
 param azureCRPassword string
+
+@description('Name of redis volume')
+param redisVolume string = 'redis-volume'
 
 resource redis 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'nm-redis'
@@ -251,12 +258,25 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
+          volumeMounts: [
+            {
+              volumeName: redisVolume
+              mountPath: '/data'
+            }
+          ]
         }
       ]
       scale: {
         minReplicas: 1
         maxReplicas: 1
       }
+      volumes: [
+        {
+          name: redisVolume
+          storageType: 'AzureFile'
+          storageName: storageModule.outputs.storageInfo.redis.mountName
+        }
+      ]
     }
     workloadProfileName: 'Consumption'
   }

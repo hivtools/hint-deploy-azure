@@ -5,13 +5,13 @@ set -e
 # user-cli add-user test.user@example.com password
 
 COMMAND_ARGS="$@"
-HINT_RESOURCE_GROUP="nmHint-RG"
-HINT_STORAGE_ACCOUNT="hintappstorage"
+
+source ./common/set_env
+source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD AVENIR_NM_EMAIL_PASSWORD AVENIR_NM_ISSUE_REPORT_URL
 
 # Get the key for storage account
 STORAGE_ACCOUNT_KEY=$(az storage account keys list --resource-group $HINT_RESOURCE_GROUP --account-name $HINT_STORAGE_ACCOUNT | jq -r '.[0].value')
 
-source ./common/fetch_and_set_env_vars AVENIR_NM_DB_PASSWORD AVENIR_NM_EMAIL_PASSWORD AVENIR_NM_ISSUE_REPORT_URL
 
 # Need to conncet to DB, and to have the config in a volume
 az container create \

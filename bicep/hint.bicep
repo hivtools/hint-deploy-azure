@@ -213,11 +213,17 @@ param azureCRUsername string
 @description('Azure Registry password')
 param azureCRPassword string
 
+@description('redis container app name')
+param redisName string
+
 @description('Name of redis volume')
 param redisVolume string = 'redis-volume'
 
+@description('Redis docker image to use')
+param redisImage string
+
 resource redis 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'nm-redis'
+  name: redisName
   location: location
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
@@ -246,7 +252,7 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'redis'
-          image: 'nmhintcr.azurecr.io/redis:5.0'
+          image: redisImage
           command: [
             'redis-server'
           ]
@@ -286,6 +292,12 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
 // HINTR
 // ------------------
 
+@description('hintr container app name')
+param hintrName string
+
+@description('hintr docker image to use')
+param hintrImage string
+
 @description('Name of uploads volume')
 param uploadsVolume string = 'uploads-volume'
 
@@ -296,7 +308,7 @@ param resultsVolume string = 'results-volume'
 param configVolume string = 'config-volume'
 
 resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'nm-hintr'
+  name: hintrName
   location: location
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
@@ -311,7 +323,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'hintr'
-          image: 'ghcr.io/mrc-ide/hintr:add-health-check'
+          image: hintrImage
           command: [
             '/usr/local/bin/hintr_api'
           ]
@@ -359,7 +371,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: uploadsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountName
+          storageName: storageModule.outputs.storageInfo.uploads.mountName
         }
         {
           name: resultsVolume
@@ -376,8 +388,14 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
 // HINTR workers
 // ------------------
 
+@description('hintr worker container app name')
+param hintrWorkerName string
+
+@description('hintr worker docker image to use')
+param hintrWorkerImage string
+
 resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'nm-hintr-worker'
+  name: hintrWorkerName
   location: location
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
@@ -385,7 +403,7 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'hintr-worker'
-          image: 'ghcr.io/mrc-ide/hintr-worker:add-health-check'
+          image: hintrWorkerImage
           env: [
             {
               name: 'REDIS_URL'
@@ -452,6 +470,12 @@ param databaseName string = 'hint'
 @description('PostgreSQL database hostname')
 var databaseHostname = '${postgresServerName}.postgres.database.azure.com'
 
+@description('Tag of the DB migrate docker image to use')
+param dbMigrateName string
+
+@description('Tag of the DB migrate docker image to use')
+param dbMigrateImage string
+
 resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-12-01-preview' = {
   name: postgresServerName
   location: location
@@ -485,14 +509,14 @@ resource postgresDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2
 }
 
 resource hintDbMigration 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
-  name: 'hint-db-migrate'
+  name: dbMigrateName
   location: location
   properties: {
     containers: [
       {
         name: 'hint-db-migrate'
         properties: {
-          image: 'ghcr.io/mrc-ide/hint-db-migrate:latest'
+          image: dbMigrateImage
           command: [
             'flyway'
             'migrate'
@@ -524,11 +548,14 @@ resource hintDbMigration 'Microsoft.ContainerInstance/containerGroups@2023-05-01
 // ------------------
 
 @description('hint web app name')
-param hintWebAppName string = 'nm-hint'
+param hintWebAppName string
 
 @secure()
 @description('Avenir access token used to pull env vars from the auth server')
 param avenirAccessToken string
+
+@description('hint docker image to use')
+param hintImage string
 
 resource hint 'Microsoft.App/containerApps@2024-03-01' = {
   name: hintWebAppName
@@ -552,7 +579,7 @@ resource hint 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'hint'
-          image: 'ghcr.io/mrc-ide/hint:azure-entrypoint'
+          image: hintImage
           command: [
             '/entrypoint_azure'
           ]

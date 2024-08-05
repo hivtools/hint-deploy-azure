@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+export HINT_DEPLOYMENT_STACK="hint-stack"
+export HINT_RESOURCE_GROUP="nmHint-RG"
+export HINT_CR="nmHintCR"
+export HINT_STORAGE_ACCOUNT="hintappstorage"

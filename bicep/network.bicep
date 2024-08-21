@@ -20,14 +20,14 @@ resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = [for s
   parent: vnet
   properties: {
     addressPrefix: subnet.addressPrefix
-    delegations: [
+    delegations: contains(subnet, 'service') && !empty(subnet.service) ? [
       {
         name: 'dlg-${subnet.service}'
         properties: {
           serviceName: subnet.service
         }
       }
-    ]
+    ] : []
     privateEndpointNetworkPolicies: subnet.public ? 'Disabled' : 'Enabled'
     privateLinkServiceNetworkPolicies: subnet.public ? 'Disabled' : 'Enabled'
   }

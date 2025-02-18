@@ -19,6 +19,9 @@ param redisName string
 @description('Worker image name with registry and tag')
 param hintrWorkerImage string
 
+@description('URL (without scheme) proxy is deployed at')
+param proxyUrl string
+
 // ------------------
 //    EXISTING RESOURCES
 // ------------------
@@ -37,9 +40,13 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' existing = {
 
 @description('Name of uploads volume')
 param uploadsVolume string = 'uploads-volume'
+@description('Name of uploads mount')
+param uploadsMount string = 'uploads-mount-r'
 
 @description('Name of results volume')
 param resultsVolume string = 'results-volume'
+@description('Name of results mount')
+param resultsMount string = 'uploads-mount-rw'
 
 
 // ------------------
@@ -65,7 +72,7 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://nm-redis:6379'
+              value: 'redis://${redisName}:6379'
             }
           ]
           resources: {
@@ -88,12 +95,12 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
         {
           name: uploadsVolume
           storageType: 'AzureFile'
-          storageName: 'uploads-mount'
+          storageName: uploadsMount
         }
         {
           name: resultsVolume
           storageType: 'AzureFile'
-          storageName: 'results-mount'
+          storageName: resultsMount
         }
       ]
     }
@@ -109,11 +116,12 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           rules: [
             {
               name: 'job-queued-trigger'
-              type: 'redis'
+              type: 'metrics-api'
               metadata: {
-                address: 'nm-redis:${redis.properties.configuration.ingress.targetPort}'
-                listName: 'hintr:queue:run'
-                listLength: '1'
+                url: 'https://${proxyUrl}/queue-length'
+                targetValue: '1'
+                valueLocation: 'length'
+                method: 'GET'
               }
             }
           ]
@@ -122,6 +130,6 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
       replicaTimeout: 500
       replicaRetryLimit: 1
     }
-    workloadProfileName: 'consumption'
+    workloadProfileName: 'Consumption'
   }
 }

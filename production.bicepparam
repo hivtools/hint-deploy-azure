@@ -3,7 +3,7 @@ using 'bicep/hint.bicep'
 param avenirAccessToken = readEnvironmentVariable('AVENIR_ACCESS_TOKEN')
 
 param location = 'eastus'
-param storageAccountName = 'hintappstorage'
+param storageAccountName = 'hintappstoragepremium'
 
 param containerAppsEnvironmentName = 'hint-env'
 param hintWorkloadProfileName = 'hint-profile'
@@ -12,14 +12,14 @@ param workerWorkloadProfileName = 'worker-profile'
 param azureCRUrl = readEnvironmentVariable('AZURE_HINT_CR_SERVER')
 param azureCRUsername = readEnvironmentVariable('AZURE_HINT_CR_USERNAME')
 param azureCRPassword = readEnvironmentVariable('AZURE_HINT_CR_PASSWORD')
-
 param adminDbPassword = readEnvironmentVariable('AVENIR_NM_DB_PASSWORD')
 
-param hintImage = 'ghcr.io/mrc-ide/hint:azure-entrypoint'
-param dbMigrateImage = 'ghcr.io/mrc-ide/hint-db-migrate:latest'
-param hintrImage = 'ghcr.io/mrc-ide/hintr:worker-single-step'
-param hintrWorkerImage = 'ghcr.io/mrc-ide/hintr-worker:worker-single-step'
+param hintImage = 'ghcr.io/hivtools/hint:azure-wa'
+param dbMigrateImage = 'ghcr.io/hivtools/hint-db-migrate:latest'
+param hintrImage = 'ghcr.io/hivtools/hintr:main'
+param hintrWorkerImage = 'ghcr.io/hivtools/hintr-worker:main'
 param redisImage = 'nmhintcr.azurecr.io/redis:5.0'
+param proxyImage = 'ghcr.io/hivtools/hint-proxy-azure:main'
 
 param hintWebAppName = 'nm-hint'
 param dbMigrateName = 'nm-db-migrate'

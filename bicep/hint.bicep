@@ -143,7 +143,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
         workloadProfileType: 'Consumption'
       }
       {
-        minimumCount: 1
+        minimumCount: 0
         maximumCount: 2
         name: hintWorkloadProfileName
         workloadProfileType: 'E4'
@@ -157,7 +157,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
     ]
     vnetConfiguration: {
       infrastructureSubnetId: vnetInfo.subnets['${prefix}-hintr-subnet'].id
-      internal: true
+      internal: false
     }
   }
 }
@@ -166,32 +166,32 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
 // Private DNS for container app env
 // ------------------
 
-module privateDnsZone 'ca_private_dns.bicep' = {
-  name: 'ca-private-dns-zone'
-  params: {
-    envDefaultDomain: containerAppsEnvironment.properties.defaultDomain
-    envStaticIp: containerAppsEnvironment.properties.staticIp
-    tags: {}
-    vnetName: vnetInfo.vnet.name
-  }
-}
+// module privateDnsZone 'ca_private_dns.bicep' = {
+//   name: 'ca-private-dns-zone'
+//   params: {
+//     envDefaultDomain: containerAppsEnvironment.properties.defaultDomain
+//     envStaticIp: containerAppsEnvironment.properties.staticIp
+//     tags: {}
+//     vnetName: vnetInfo.vnet.name
+//   }
+// }
 
 // ------------------
 // Record for postgres private dns zone
 // ------------------
 
-resource record 'Microsoft.Network/privateDnsZones/A@2020-06-01' = {
-  parent: dnszone
-  name: '*'
-  properties: {
-    ttl: 3600
-    aRecords: [
-      {
-        ipv4Address: containerAppsEnvironment.properties.staticIp
-      }
-    ]
-  }
-}
+// resource record 'Microsoft.Network/privateDnsZones/A@2020-06-01' = {
+//   parent: dnszone
+//   name: '*'
+//   properties: {
+//     ttl: 3600
+//     aRecords: [
+//       {
+//         ipv4Address: containerAppsEnvironment.properties.staticIp
+//       }
+//     ]
+//   }
+// }
 
 // ------------------
 // STORAGE
@@ -207,19 +207,15 @@ param storageSettings object = {
   fileShares: {
     uploads: {
       name: 'uploads'
-      mountAccessMode: 'ReadWrite'
     }
     results: {
       name: 'results'
-      mountAccessMode: 'ReadWrite'
     }
     config: {
       name: 'config'
-      mountAccessMode: 'ReadWrite'
     }
     redis: {
       name: 'redis'
-      mountAccessMode: 'ReadWrite'
     }
   }
 }
@@ -261,7 +257,7 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: true
+        external: false
         targetPort: 6379
         allowInsecure: false
         transport: 'tcp'
@@ -312,7 +308,7 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: redisVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.redis.mountName
+          storageName: storageModule.outputs.storageInfo.redis.mountNameRW
         }
       ]
     }
@@ -346,9 +342,9 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: true
+        external: false
         targetPort: 8888
-        allowInsecure: false
+        allowInsecure: true
       }
     }
     template: {
@@ -376,11 +372,11 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://nm-redis:6379'
+              value: 'redis://${redisName}:6379'
             }
           ]
           resources: {
-            cpu: json('1')
+            cpu: json('2')
             memory: '4Gi'
           }
           volumeMounts: [
@@ -403,16 +399,16 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: uploadsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.uploads.mountName
+          storageName: storageModule.outputs.storageInfo.uploads.mountNameR
         }
         {
           name: resultsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountName
+          storageName: storageModule.outputs.storageInfo.results.mountNameRW
         }
       ]
     }
-    workloadProfileName: hintWorkloadProfileName
+    workloadProfileName: 'Consumption'
   }
 }
 
@@ -445,11 +441,11 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://nm-redis:6379'
+              value: 'redis://${redisName}:6379'
             }
           ]
           resources: {
-            cpu: json('1')
+            cpu: json('2')
             memory: '4Gi'
           }
           volumeMounts: [
@@ -472,35 +468,19 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: uploadsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.uploads.mountName
+          storageName: storageModule.outputs.storageInfo.uploads.mountNameR
         }
         {
           name: resultsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountName
+          storageName: storageModule.outputs.storageInfo.results.mountNameRW
         }
       ]
     }
-    workloadProfileName: hintWorkloadProfileName
+    workloadProfileName: 'Consumption'
   }
   dependsOn: [
     hintr
-  ]
-}
-
-module workerJobModule './worker_job.bicep' = {
-  name: 'workerJob'
-  params: {
-    location: location
-    containerAppsEnvironmentName: containerAppsEnvironmentName
-    workloadProfile: workerWorkloadProfileName
-    hintrWorkerImage: hintrWorkerImage
-    redisName: redisName
-    resultsVolume: resultsVolume
-    uploadsVolume: uploadsVolume
-  }
-  dependsOn: [
-    containerAppsEnvironment
   ]
 }
 
@@ -618,9 +598,9 @@ resource hint 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: true
+        external: false
         targetPort: 8080
-        allowInsecure: false
+        allowInsecure: true
       }
       secrets: [
         {
@@ -656,7 +636,7 @@ resource hint 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('1')
+            cpu: json('2')
             memory: '4Gi'
           }
           volumeMounts: [
@@ -672,52 +652,271 @@ resource hint 'Microsoft.App/containerApps@2024-03-01' = {
               volumeName: configVolume
               mountPath: '/etc/hint'
             }
+            {
+              volumeName: 'local-cache'
+              mountPath: '/tmp'
+            }
           ]
         }
       ]
       scale: {
-        minReplicas: 1
+        minReplicas: 0
         maxReplicas: 1
       }
       volumes: [
         {
           name: uploadsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.uploads.mountName
+          storageName: storageModule.outputs.storageInfo.uploads.mountNameRW
         }
         {
           name: resultsVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountName
+          storageName: storageModule.outputs.storageInfo.results.mountNameR
         }
         {
           name: configVolume
           storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.config.mountName
+          storageName: storageModule.outputs.storageInfo.config.mountNameRW
+        }
+        {
+          name: 'local-cache'
+          storageType: 'EmptyDir'
         }
       ]
     }
-    workloadProfileName: hintWorkloadProfileName
+    workloadProfileName: 'Consumption'
   }
   dependsOn: [
     hintDbMigration
   ]
 }
 
-param appGwName string = 'nm-hint-gw'
-param hintPublicIpName string = 'nm-hint-public-ip'
-param privateLinkServiceName string = 'nm-hint-private-link'
+// ------------------
+// Reverse proxy
+// ------------------
 
-module appGateway 'app_gateway.bicep' = {
-  name: 'appgateway'
+@description('reverse proxy name')
+param proxyName string = 'nm-proxy'
+
+@description('hint web app name')
+param proxyImage string
+
+@description('External URL the proxy is at')
+var proxyUrl = '${proxyName}.${containerAppsEnvironment.properties.defaultDomain}'
+
+resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
+  name: proxyName
+  location: location
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+        allowInsecure: true
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'proxy'
+          image: proxyImage
+          args: [
+            '${proxyUrl}'
+            '80'
+            '443'
+          ]
+          env: [
+            {
+              name: 'HINT_NAME'
+              value: hintWebAppName
+            }
+            {
+              name: 'HINTR_NAME'
+              value: hintrName
+            }
+            {
+              name: 'REDIS_NAME'
+              value: redisName
+            }
+            {
+              name: 'REDIS_PORT'
+              value: '6379'
+            }
+            {
+              name: 'REDIS_QUEUE_NAME'
+              value: 'hintr:queue:run'
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+    workloadProfileName: 'Consumption'
+  }
+  dependsOn: [
+    hint
+  ]
+}
+
+module workerJobModule './worker_job.bicep' = {
+  name: 'workerJob'
   params: {
-    appGatewayName: appGwName
-    containerAppFqdn: hint.properties.configuration.ingress.fqdn
-    envSubnetId: vnetInfo.subnets['${prefix}-hintr-subnet'].id
-    ipAddressName: hintPublicIpName
     location: location
-    privateLinkServiceName: privateLinkServiceName
-    subnetId: vnetInfo.subnets['${prefix}-gateway-subnet'].id
-    tags: {}
+    containerAppsEnvironmentName: containerAppsEnvironmentName
+    workloadProfile: workerWorkloadProfileName
+    hintrWorkerImage: hintrWorkerImage
+    redisName: redisName
+    resultsVolume: resultsVolume
+    resultsMount: storageModule.outputs.storageInfo.results.mountNameRW
+    uploadsVolume: uploadsVolume
+    uploadsMount: storageModule.outputs.storageInfo.uploads.mountNameR
+    proxyUrl: proxyUrl
+  }
+  dependsOn: [
+    containerAppsEnvironment
+    proxy
+  ]
+}
+
+
+// ------------------
+// Hint web-web app
+// ------------------
+
+@description('hint web app name')
+param hintWebWebAppName string = 'nm-hint-wa'
+
+@description('hint web app name')
+param hintAppServicePlanName string = 'nm-hint-SP'
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: storageAccountName
+}
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
+  name: hintAppServicePlanName
+  location: location
+  properties: {
+    reserved: true
+  }
+  sku: {
+    name: 'P1V3'
+  }
+  kind: 'linux'
+}
+
+resource diagnosticLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: appServicePlan.name
+  scope: appServicePlan
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
   }
 }
+
+resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
+  name: hintWebWebAppName
+  location: location
+  kind: 'app,linux,container'
+  properties: {
+    serverFarmId: appServicePlan.id
+    virtualNetworkSubnetId: vnetInfo.subnets['${prefix}-hint-subnet'].id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'AVENIR_ACCESS_TOKEN'
+          value: avenirAccessToken
+        }
+        {
+          name: 'APPLICATION_URL'
+          value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
+        }
+        {
+          name: 'HINTR_URL'
+          value: 'http://nm-hintr'
+        }
+        {
+          name: 'DB_URL'
+          value: 'jdbc:postgresql://${databaseHostname}/${databaseName}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://ghcr.io'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8080'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|${hintImage}'
+      appCommandLine: '--azure'
+      azureStorageAccounts: {
+        uploadsMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/uploads'
+          shareName: storageModule.outputs.storageInfo.uploads.shareName
+
+        }
+        resultsMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/results'
+          shareName: storageModule.outputs.storageInfo.results.shareName
+        }
+        configMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/etc/hint'
+          shareName: storageModule.outputs.storageInfo.config.shareName
+        }
+      }
+    }
+  }
+  dependsOn: [
+    hintDbMigration
+  ]
+}
+
+resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: hintWA.name
+  scope: hintWA
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+
+@description('hint web app vnet connection name')
+param hintVNetConName string = 'nm-hint-vnet-con'
+
+// resource symbolicname 'Microsoft.Web/sites/networkConfig@2024-04-01' = {
+//   parent: hintWA
+//   name: hintVNetConName
+//   properties: {
+//     subnetResourceId: resourceId('Microsoft.Network/virtualNetworks/subnets', vnetSettings.name, vnetInfo.subnets['${prefix}-hint-subnet'].name)
+//   }
+// }

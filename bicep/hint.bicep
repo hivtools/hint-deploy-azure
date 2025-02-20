@@ -157,7 +157,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
     ]
     vnetConfiguration: {
       infrastructureSubnetId: vnetInfo.subnets['${prefix}-hintr-subnet'].id
-      internal: false
+      internal: true
     }
   }
 }
@@ -257,7 +257,7 @@ resource redis 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: false
+        external: true
         targetPort: 6379
         allowInsecure: false
         transport: 'tcp'
@@ -342,7 +342,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: false
+        external: true
         targetPort: 8888
         allowInsecure: true
       }
@@ -591,106 +591,106 @@ param avenirAccessToken string
 @description('hint docker image to use')
 param hintImage string
 
-resource hint 'Microsoft.App/containerApps@2024-03-01' = {
-  name: hintWebAppName
-  location: location
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      ingress: {
-        external: false
-        targetPort: 8080
-        allowInsecure: true
-      }
-      secrets: [
-        {
-          name: 'avenir-access-token'
-          value: avenirAccessToken
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'hint'
-          image: hintImage
-          command: [
-            '/entrypoint_azure'
-          ]
-          env: [
-            {
-              name: 'AVENIR_ACCESS_TOKEN'
-              secretRef: 'avenir-access-token'
-            }
-            {
-              name: 'APPLICATION_URL'
-              value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
-            }
-            {
-              name: 'HINTR_URL'
-              value: 'http://nm-hintr'
-            }
-            {
-              name: 'DB_URL'
-              value: 'jdbc:postgresql://${databaseHostname}/${databaseName}'
-            }
-          ]
-          resources: {
-            cpu: json('2')
-            memory: '4Gi'
-          }
-          volumeMounts: [
-            {
-              volumeName: uploadsVolume
-              mountPath: '/uploads'
-            }
-            {
-              volumeName: resultsVolume
-              mountPath: '/results'
-            }
-            {
-              volumeName: configVolume
-              mountPath: '/etc/hint'
-            }
-            {
-              volumeName: 'local-cache'
-              mountPath: '/tmp'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 0
-        maxReplicas: 1
-      }
-      volumes: [
-        {
-          name: uploadsVolume
-          storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.uploads.mountNameRW
-        }
-        {
-          name: resultsVolume
-          storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountNameR
-        }
-        {
-          name: configVolume
-          storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.config.mountNameRW
-        }
-        {
-          name: 'local-cache'
-          storageType: 'EmptyDir'
-        }
-      ]
-    }
-    workloadProfileName: 'Consumption'
-  }
-  dependsOn: [
-    hintDbMigration
-  ]
-}
+// resource hint 'Microsoft.App/containerApps@2024-03-01' = {
+//   name: hintWebAppName
+//   location: location
+//   properties: {
+//     managedEnvironmentId: containerAppsEnvironment.id
+//     configuration: {
+//       ingress: {
+//         external: false
+//         targetPort: 8080
+//         allowInsecure: true
+//       }
+//       secrets: [
+//         {
+//           name: 'avenir-access-token'
+//           value: avenirAccessToken
+//         }
+//       ]
+//     }
+//     template: {
+//       containers: [
+//         {
+//           name: 'hint'
+//           image: hintImage
+//           command: [
+//             '/entrypoint_azure'
+//           ]
+//           env: [
+//             {
+//               name: 'AVENIR_ACCESS_TOKEN'
+//               secretRef: 'avenir-access-token'
+//             }
+//             {
+//               name: 'APPLICATION_URL'
+//               value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
+//             }
+//             {
+//               name: 'HINTR_URL'
+//               value: 'http://nm-hintr'
+//             }
+//             {
+//               name: 'DB_URL'
+//               value: 'jdbc:postgresql://${databaseHostname}/${databaseName}'
+//             }
+//           ]
+//           resources: {
+//             cpu: json('2')
+//             memory: '4Gi'
+//           }
+//           volumeMounts: [
+//             {
+//               volumeName: uploadsVolume
+//               mountPath: '/uploads'
+//             }
+//             {
+//               volumeName: resultsVolume
+//               mountPath: '/results'
+//             }
+//             {
+//               volumeName: configVolume
+//               mountPath: '/etc/hint'
+//             }
+//             {
+//               volumeName: 'local-cache'
+//               mountPath: '/tmp'
+//             }
+//           ]
+//         }
+//       ]
+//       scale: {
+//         minReplicas: 0
+//         maxReplicas: 1
+//       }
+//       volumes: [
+//         {
+//           name: uploadsVolume
+//           storageType: 'AzureFile'
+//           storageName: storageModule.outputs.storageInfo.uploads.mountNameRW
+//         }
+//         {
+//           name: resultsVolume
+//           storageType: 'AzureFile'
+//           storageName: storageModule.outputs.storageInfo.results.mountNameR
+//         }
+//         {
+//           name: configVolume
+//           storageType: 'AzureFile'
+//           storageName: storageModule.outputs.storageInfo.config.mountNameRW
+//         }
+//         {
+//           name: 'local-cache'
+//           storageType: 'EmptyDir'
+//         }
+//       ]
+//     }
+//     workloadProfileName: 'Consumption'
+//   }
+//   dependsOn: [
+//     hintDbMigration
+//   ]
+// }
 
 // ------------------
 // Reverse proxy
@@ -705,67 +705,67 @@ param proxyImage string
 @description('External URL the proxy is at')
 var proxyUrl = '${proxyName}.${containerAppsEnvironment.properties.defaultDomain}'
 
-resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
-  name: proxyName
-  location: location
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 80
-        allowInsecure: true
-      }
-    }
-    template: {
-      containers: [
-        {
-          name: 'proxy'
-          image: proxyImage
-          args: [
-            '${proxyUrl}'
-            '80'
-            '443'
-          ]
-          env: [
-            {
-              name: 'HINT_NAME'
-              value: hintWebAppName
-            }
-            {
-              name: 'HINTR_NAME'
-              value: hintrName
-            }
-            {
-              name: 'REDIS_NAME'
-              value: redisName
-            }
-            {
-              name: 'REDIS_PORT'
-              value: '6379'
-            }
-            {
-              name: 'REDIS_QUEUE_NAME'
-              value: 'hintr:queue:run'
-            }
-          ]
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-      }
-    }
-    workloadProfileName: 'Consumption'
-  }
-  dependsOn: [
-    hint
-  ]
-}
+// resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
+//   name: proxyName
+//   location: location
+//   properties: {
+//     managedEnvironmentId: containerAppsEnvironment.id
+//     configuration: {
+//       ingress: {
+//         external: true
+//         targetPort: 80
+//         allowInsecure: true
+//       }
+//     }
+//     template: {
+//       containers: [
+//         {
+//           name: 'proxy'
+//           image: proxyImage
+//           args: [
+//             '${proxyUrl}'
+//             '80'
+//             '443'
+//           ]
+//           env: [
+//             {
+//               name: 'HINT_NAME'
+//               value: hintWebAppName
+//             }
+//             {
+//               name: 'HINTR_NAME'
+//               value: hintrName
+//             }
+//             {
+//               name: 'REDIS_NAME'
+//               value: redisName
+//             }
+//             {
+//               name: 'REDIS_PORT'
+//               value: '6379'
+//             }
+//             {
+//               name: 'REDIS_QUEUE_NAME'
+//               value: 'hintr:queue:run'
+//             }
+//           ]
+//           resources: {
+//             cpu: json('0.25')
+//             memory: '0.5Gi'
+//           }
+//         }
+//       ]
+//       scale: {
+//         minReplicas: 1
+//         maxReplicas: 1
+//       }
+//     }
+//     workloadProfileName: 'Consumption'
+//   }
+//   dependsOn: [
+//     hint
+//   ]
+// }
 
 module workerJobModule './worker_job.bicep' = {
   name: 'workerJob'
@@ -779,11 +779,9 @@ module workerJobModule './worker_job.bicep' = {
     resultsMount: storageModule.outputs.storageInfo.results.mountNameRW
     uploadsVolume: uploadsVolume
     uploadsMount: storageModule.outputs.storageInfo.uploads.mountNameR
-    proxyUrl: proxyUrl
   }
   dependsOn: [
     containerAppsEnvironment
-    proxy
   ]
 }
 
@@ -828,6 +826,54 @@ resource diagnosticLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-previe
   }
 }
 
+// ------------------
+// Private DNS for container apps
+// ------------------
+
+@description('Name for private endpoint to access container apps')
+param privateEndpointName string = 'containerapp'
+
+@description('DNS Zone name for container app')
+param privateDnsName string = 'privatelink'
+
+@description('Fully Qualified DNS Private Zone for container apps')
+param privateDnsZoneName string = '${privateDnsName}.${location}.azurecontainerapps.io'
+
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: privateEndpointName
+  location: location
+  properties: {
+    subnet: {
+      id: vnetInfo.subnets['${prefix}-gateway-subnet'].id
+    }
+    privateLinkServiceConnections: [
+      {
+        name: privateEndpointName
+        properties: {
+          privateLinkServiceId: containerAppsEnvironment.id
+          groupIds: [
+            'managedEnvironments'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+@description('Get just the ID of the container app environment')
+var containerAppUniqueId = split(containerAppsEnvironment.properties.defaultDomain, '.')[0]
+
+module privateDnsZone 'ca_private_dns.bicep' = {
+  name: privateDnsZoneName
+  params: {
+    dnsZoneName: privateDnsZoneName
+    envDefaultDomain: containerAppUniqueId
+    privateEndpointId: privateEndpoint.properties.networkInterfaces[0].id
+    tags: {}
+    vnetName: vnetInfo.vnet.name
+  }
+}
+
 resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
   name: hintWebWebAppName
   location: location
@@ -843,11 +889,11 @@ resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'APPLICATION_URL'
-          value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
+          value: 'https://${hintWebWebAppName}.azurewebsites.net'
         }
         {
           name: 'HINTR_URL'
-          value: 'http://nm-hintr'
+          value: 'http://${hintr.properties.configuration.ingress.fqdn}'
         }
         {
           name: 'DB_URL'

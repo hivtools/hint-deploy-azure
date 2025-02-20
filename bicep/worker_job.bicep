@@ -19,9 +19,6 @@ param redisName string
 @description('Worker image name with registry and tag')
 param hintrWorkerImage string
 
-@description('URL (without scheme) proxy is deployed at')
-param proxyUrl string
-
 // ------------------
 //    EXISTING RESOURCES
 // ------------------
@@ -48,7 +45,6 @@ param resultsVolume string = 'results-volume'
 @description('Name of results mount')
 param resultsMount string = 'uploads-mount-rw'
 
-
 // ------------------
 // HINTR workers
 // ------------------
@@ -72,7 +68,7 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://${redisName}:6379'
+              value: 'redis://${redis.properties.configuration.ingress.fqdn}:6379'
             }
           ]
           resources: {
@@ -116,12 +112,11 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           rules: [
             {
               name: 'job-queued-trigger'
-              type: 'metrics-api'
+              type: 'redis'
               metadata: {
-                url: 'https://${proxyUrl}/queue-length'
-                targetValue: '1'
-                valueLocation: 'length'
-                method: 'GET'
+                address: '${redisName}:${redis.properties.configuration.ingress.targetPort}'
+                listName: 'hintr:queue:run'
+                listLength: '1'
               }
             }
           ]

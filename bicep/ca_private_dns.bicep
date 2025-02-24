@@ -14,7 +14,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2024-05-01' exist
   name: privateEndpointIdSplit[length(privateEndpointIdSplit) - 1]
 }
 
-resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   name: dnsZoneName
   location: 'global'
   tags: tags
@@ -32,32 +32,6 @@ resource aRecordSet 'Microsoft.Network/privateDnsZones/A@2024-06-01' = {
     ]
   }
 }
-
-// resource starRecordSet 'Microsoft.Network/privateDnsZones/A@2020-06-01' = {
-//   name: '*'
-//   parent: privateDnsZone
-//   properties: {
-//     ttl: 3600
-//     aRecords: [
-//       {
-//         ipv4Address: envStaticIp
-//       }
-//     ]
-//   }
-// }
-
-// resource atRecordSet 'Microsoft.Network/privateDnsZones/A@2020-06-01' = {
-//   name: '@'
-//   parent: privateDnsZone
-//   properties: {
-//     ttl: 3600
-//     aRecords: [
-//       {
-//         ipv4Address: envStaticIp
-//       }
-//     ]
-//   }
-// }
 
 resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
   name: '${vnet.name}-link'

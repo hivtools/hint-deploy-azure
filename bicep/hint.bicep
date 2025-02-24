@@ -76,7 +76,7 @@ param dnsZoneName string = 'hint-private-dns'
 param dnsZoneFqdn string = '${dnsZoneName}.postgres.database.azure.com'
 
 @description('Postgres private DNS subnet ID')
-var postgresqlSubnetId = '${vnetLink.properties.virtualNetwork.id}/subnets/${prefix}-hint-db-subnet'
+var postgresSubnetResourceId = '${vnetLink.properties.virtualNetwork.id}/subnets/${prefix}-hint-db-subnet'
 
 resource dnszone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: dnsZoneFqdn
@@ -161,38 +161,6 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
     }
   }
 }
-
-// ------------------
-// Private DNS for container app env
-// ------------------
-
-// module privateDnsZone 'ca_private_dns.bicep' = {
-//   name: 'ca-private-dns-zone'
-//   params: {
-//     envDefaultDomain: containerAppsEnvironment.properties.defaultDomain
-//     envStaticIp: containerAppsEnvironment.properties.staticIp
-//     tags: {}
-//     vnetName: vnetInfo.vnet.name
-//   }
-// }
-
-// ------------------
-// Record for postgres private dns zone
-// ------------------
-
-// resource record 'Microsoft.Network/privateDnsZones/A@2020-06-01' = {
-//   parent: dnszone
-//   name: '*'
-//   properties: {
-//     ttl: 3600
-//     aRecords: [
-//       {
-//         ipv4Address: containerAppsEnvironment.properties.staticIp
-//       }
-//     ]
-//   }
-// }
-
 // ------------------
 // STORAGE
 // ------------------
@@ -231,90 +199,15 @@ module storageModule './storage.bicep' = {
 // REDIS
 // ------------------
 
-@description('Docker container registry URL')
-param azureCRUrl string
-
-@description('Docker container registry username')
-param azureCRUsername string
-
-@secure()
-@description('Azure Registry password')
-param azureCRPassword string
-
-@description('redis container app name')
-param redisName string
-
-@description('Name of redis volume')
-param redisVolume string = 'redis-volume'
-
-@description('Redis docker image to use')
-param redisImage string
-
-resource redis 'Microsoft.App/containerApps@2024-03-01' = {
-  name: redisName
-  location: location
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 6379
-        allowInsecure: false
-        transport: 'tcp'
-      }
-      secrets: [
-        {
-          name: 'registry-password'
-          value: azureCRPassword
-        }
-      ]
-      registries: [
-        {
-          passwordSecretRef: 'registry-password'
-          server: azureCRUrl
-          username: azureCRUsername
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'redis'
-          image: redisImage
-          command: [
-            'redis-server'
-          ]
-          args: [
-            '--appendonly'
-            'yes'
-          ]
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
-          volumeMounts: [
-            {
-              volumeName: redisVolume
-              mountPath: '/data'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-      }
-      volumes: [
-        {
-          name: redisVolume
-          storageType: 'AzureFile'
-          storageName: storageModule.outputs.storageInfo.redis.mountNameRW
-        }
-      ]
-    }
-    workloadProfileName: 'Consumption'
+module redisModule 'redis.bicep' = {
+  name: 'redis-module'
+  params: {
+    privateEndpointSubnet: vnetInfo.subnets['${prefix}-gateway-subnet'].id
+    vnetName: vnetInfo.vnet.name
   }
 }
+
+var redisInfo = redisModule.outputs.redisInfo
 
 // ------------------
 // HINTR
@@ -372,7 +265,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://${redisName}:6379'
+              value: redisInfo.connectionString
             }
           ]
           resources: {
@@ -441,7 +334,7 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://${redisName}:6379'
+              value: redisInfo.connectionString
             }
           ]
           resources: {
@@ -488,209 +381,35 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
 // Database
 // ------------------
 
-@description('PostgreSQL server name')
-param postgresServerName string = 'nm-hint-db'
-
-@description('PostgreSQL administrator username')
-param adminDbUsername string = 'hint'
-
 @secure()
 @description('PostgreSQL administrator password')
 param adminDbPassword string
 
-@description('PostgreSQL database name')
-param databaseName string = 'hint'
-
-@description('PostgreSQL database hostname')
-var databaseHostname = '${postgresServerName}.postgres.database.azure.com'
-
-@description('Tag of the DB migrate docker image to use')
-param dbMigrateName string
-
 @description('Tag of the DB migrate docker image to use')
 param dbMigrateImage string
 
-resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-12-01-preview' = {
-  name: postgresServerName
+@description('Tag of the DB migrate docker image to use')
+param dbMigrateName string = '${prefix}-db-migrate'
+
+var dbSettings = {
   location: location
-  sku: {
-    name: 'Standard_B1ms'
-    tier: 'Burstable'
-  }
-  properties: {
-    version: '11'
-    administratorLogin: adminDbUsername
-    administratorLoginPassword: adminDbPassword
-    storage: {
-      storageSizeGB: 32
-    }
-    backup: {
-      backupRetentionDays: 7
-      geoRedundantBackup: 'Disabled'
-    }
-    network: {
-      delegatedSubnetResourceId: postgresqlSubnetId
-      privateDnsZoneArmResourceId: dnszone.id
-      publicNetworkAccess: 'Disabled'
-    }
-  }
-  dependsOn: [vnetModule]
+  prefix: prefix
+  adminDbPassword: adminDbPassword
+  dbMigrateName: dbMigrateName
+  dbMigrateImage: dbMigrateImage
+  postgresSubnetResourceId: postgresSubnetResourceId
+  dbMigrateSubnetId: vnetInfo.subnets['${prefix}-hint-db-migrate-subnet'].id
+  dnsZoneId: dnszone.id
 }
 
-resource postgresDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2023-12-01-preview' = {
-  parent: postgresServer
-  name: databaseName
-}
-
-resource hintDbMigration 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
-  name: dbMigrateName
-  location: location
-  properties: {
-    containers: [
-      {
-        name: 'hint-db-migrate'
-        properties: {
-          image: dbMigrateImage
-          command: [
-            'flyway'
-            'migrate'
-            '-url=jdbc:postgresql://${databaseHostname}/${databaseName}'
-          ]
-          resources: {
-            requests: {
-              cpu: json('0.5')
-              memoryInGB: json('1.0')
-            }
-          }
-        }
-      }
-    ]
-    subnetIds: [
-      {
-        id: vnetInfo.subnets['${prefix}-hint-db-migrate-subnet'].id
-        name: '${prefix}-hint-db-migrate-subnet'
-      }
-    ]
-    osType: 'Linux'
-    restartPolicy: 'Never'
+module dbModule './db.bicep' = {
+  name: 'dbDeploy'
+  params: {
+    dbSettings: dbSettings
   }
-  dependsOn: [postgresDatabase]
 }
 
-// ------------------
-// Hint web app
-// ------------------
-
-@description('hint web app name')
-param hintWebAppName string
-
-@secure()
-@description('Avenir access token used to pull env vars from the auth server')
-param avenirAccessToken string
-
-@description('hint docker image to use')
-param hintImage string
-
-// resource hint 'Microsoft.App/containerApps@2024-03-01' = {
-//   name: hintWebAppName
-//   location: location
-//   properties: {
-//     managedEnvironmentId: containerAppsEnvironment.id
-//     configuration: {
-//       ingress: {
-//         external: false
-//         targetPort: 8080
-//         allowInsecure: true
-//       }
-//       secrets: [
-//         {
-//           name: 'avenir-access-token'
-//           value: avenirAccessToken
-//         }
-//       ]
-//     }
-//     template: {
-//       containers: [
-//         {
-//           name: 'hint'
-//           image: hintImage
-//           command: [
-//             '/entrypoint_azure'
-//           ]
-//           env: [
-//             {
-//               name: 'AVENIR_ACCESS_TOKEN'
-//               secretRef: 'avenir-access-token'
-//             }
-//             {
-//               name: 'APPLICATION_URL'
-//               value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
-//             }
-//             {
-//               name: 'HINTR_URL'
-//               value: 'http://nm-hintr'
-//             }
-//             {
-//               name: 'DB_URL'
-//               value: 'jdbc:postgresql://${databaseHostname}/${databaseName}'
-//             }
-//           ]
-//           resources: {
-//             cpu: json('2')
-//             memory: '4Gi'
-//           }
-//           volumeMounts: [
-//             {
-//               volumeName: uploadsVolume
-//               mountPath: '/uploads'
-//             }
-//             {
-//               volumeName: resultsVolume
-//               mountPath: '/results'
-//             }
-//             {
-//               volumeName: configVolume
-//               mountPath: '/etc/hint'
-//             }
-//             {
-//               volumeName: 'local-cache'
-//               mountPath: '/tmp'
-//             }
-//           ]
-//         }
-//       ]
-//       scale: {
-//         minReplicas: 0
-//         maxReplicas: 1
-//       }
-//       volumes: [
-//         {
-//           name: uploadsVolume
-//           storageType: 'AzureFile'
-//           storageName: storageModule.outputs.storageInfo.uploads.mountNameRW
-//         }
-//         {
-//           name: resultsVolume
-//           storageType: 'AzureFile'
-//           storageName: storageModule.outputs.storageInfo.results.mountNameR
-//         }
-//         {
-//           name: configVolume
-//           storageType: 'AzureFile'
-//           storageName: storageModule.outputs.storageInfo.config.mountNameRW
-//         }
-//         {
-//           name: 'local-cache'
-//           storageType: 'EmptyDir'
-//         }
-//       ]
-//     }
-//     workloadProfileName: 'Consumption'
-//   }
-//   dependsOn: [
-//     hintDbMigration
-//   ]
-// }
+var dbInfo = dbModule.outputs.dbInfo
 
 // ------------------
 // Reverse proxy
@@ -774,7 +493,10 @@ module workerJobModule './worker_job.bicep' = {
     containerAppsEnvironmentName: containerAppsEnvironmentName
     workloadProfile: workerWorkloadProfileName
     hintrWorkerImage: hintrWorkerImage
-    redisName: redisName
+    redisConnectionString: redisInfo.connectionString
+    redisHostname: redisInfo.hostname
+    redisPort: redisInfo.port
+    redisPassword: redisInfo.password
     resultsVolume: resultsVolume
     resultsMount: storageModule.outputs.storageInfo.results.mountNameRW
     uploadsVolume: uploadsVolume
@@ -785,13 +507,18 @@ module workerJobModule './worker_job.bicep' = {
   ]
 }
 
+// ------------------
+// Hint web app
+// ------------------
+@secure()
+@description('Avenir access token used to pull env vars from the auth server')
+param avenirAccessToken string
 
-// ------------------
-// Hint web-web app
-// ------------------
+@description('hint docker image to use')
+param hintImage string
 
 @description('hint web app name')
-param hintWebWebAppName string = 'nm-hint-wa'
+param hintWebAppName string = 'nm-hint'
 
 @description('hint web app name')
 param hintAppServicePlanName string = 'nm-hint-SP'
@@ -874,8 +601,8 @@ module privateDnsZone 'ca_private_dns.bicep' = {
   }
 }
 
-resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
-  name: hintWebWebAppName
+resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
+  name: hintWebAppName
   location: location
   kind: 'app,linux,container'
   properties: {
@@ -889,7 +616,7 @@ resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'APPLICATION_URL'
-          value: 'https://${hintWebWebAppName}.azurewebsites.net'
+          value: 'https://${hintWebAppName}.azurewebsites.net'
         }
         {
           name: 'HINTR_URL'
@@ -897,7 +624,7 @@ resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'DB_URL'
-          value: 'jdbc:postgresql://${databaseHostname}/${databaseName}'
+          value: 'jdbc:postgresql://${dbInfo.hostname}/${dbInfo.databaseName}'
         }
         {
           name: 'DOCKER_REGISTRY_SERVER_URL'
@@ -936,14 +663,11 @@ resource hintWA 'Microsoft.Web/sites@2024-04-01' = {
       }
     }
   }
-  dependsOn: [
-    hintDbMigration
-  ]
 }
 
 resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: hintWA.name
-  scope: hintWA
+  name: hintWebApp.name
+  scope: hintWebApp
   properties: {
     workspaceId: logAnalyticsWorkspace.id
     metrics: [
@@ -954,15 +678,3 @@ resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-prev
     ]
   }
 }
-
-
-@description('hint web app vnet connection name')
-param hintVNetConName string = 'nm-hint-vnet-con'
-
-// resource symbolicname 'Microsoft.Web/sites/networkConfig@2024-04-01' = {
-//   parent: hintWA
-//   name: hintVNetConName
-//   properties: {
-//     subnetResourceId: resourceId('Microsoft.Network/virtualNetworks/subnets', vnetSettings.name, vnetInfo.subnets['${prefix}-hint-subnet'].name)
-//   }
-// }

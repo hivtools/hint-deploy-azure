@@ -4,6 +4,7 @@ targetScope = 'resourceGroup'
 //    PARAMETERS
 // ------------------
 
+
 @description('The location where the resources will be created.')
 param location string = resourceGroup().location
 
@@ -13,8 +14,18 @@ param containerAppsEnvironmentName string
 @description('Workload profile for workers')
 param workloadProfile string
 
-@description('Name of existing redis container app')
-param redisName string
+@description('String for connecting to Azure managed redis')
+param redisConnectionString string
+
+@description('hostname for azure managed redis')
+param redisHostname string
+
+@description('Port Azure managed redis is running on')
+param redisPort string
+
+@description('Password for Azure managed redis')
+@secure()
+param redisPassword string
 
 @description('Worker image name with registry and tag')
 param hintrWorkerImage string
@@ -25,10 +36,6 @@ param hintrWorkerImage string
 
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: containerAppsEnvironmentName
-}
-
-resource redis 'Microsoft.App/containerApps@2024-03-01' existing = {
-  name: redisName
 }
 
 // ------------------
@@ -68,7 +75,7 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           env: [
             {
               name: 'REDIS_URL'
-              value: 'redis://${redis.properties.configuration.ingress.fqdn}:6379'
+              value: redisConnectionString
             }
           ]
           resources: {
@@ -102,6 +109,12 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
     }
     configuration: {
       triggerType: 'Event'
+      secrets: [
+        {
+          name: 'redis-password'
+          value: redisPassword
+        }
+      ]
       eventTriggerConfig: {
         parallelism: 10
         replicaCompletionCount: 1
@@ -114,10 +127,16 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
               name: 'job-queued-trigger'
               type: 'redis'
               metadata: {
-                address: '${redisName}:${redis.properties.configuration.ingress.targetPort}'
-                listName: 'hintr:queue:run'
+                address: '${redisHostname}:${redisPort}'
+                listName: '{hintr}:queue:run'
                 listLength: '1'
               }
+              auth: [
+                {
+                  secretRef: 'redis-password'
+                  triggerParameter: 'password'
+                }
+              ]
             }
           ]
         }

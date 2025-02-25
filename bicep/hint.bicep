@@ -199,15 +199,83 @@ module storageModule './storage.bicep' = {
 // REDIS
 // ------------------
 
-module redisModule 'redis.bicep' = {
-  name: 'redis-module'
-  params: {
-    privateEndpointSubnet: vnetInfo.subnets['${prefix}-gateway-subnet'].id
-    vnetName: vnetInfo.vnet.name
+@description('redis container app name')
+param redisName string
+
+@description('Name of redis volume')
+param redisVolume string = 'redis-volume'
+
+@description('Redis docker image to use')
+param redisImage string
+
+resource redis 'Microsoft.App/containerApps@2024-03-01' = {
+  name: redisName
+  location: location
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 6379
+        allowInsecure: false
+        transport: 'tcp'
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'redis'
+          image: redisImage
+          command: [
+            'redis-server'
+          ]
+          args: [
+            '--appendonly'
+            'yes'
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          volumeMounts: [
+            {
+              volumeName: redisVolume
+              mountPath: '/data'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+      volumes: [
+        {
+          name: redisVolume
+          storageType: 'AzureFile'
+          storageName: storageModule.outputs.storageInfo.redis.mountNameRW
+        }
+      ]
+    }
+    workloadProfileName: 'Consumption'
   }
 }
 
-var redisInfo = redisModule.outputs.redisInfo
+var redisInfo = {
+  hostname: redisName
+  port: '6379'
+  connectionString: 'redis://${redisName}:6379'
+}
+
+// module redisModule 'redis.bicep' = {
+//   name: 'redis-module'
+//   params: {
+//     privateEndpointSubnet: vnetInfo.subnets['${prefix}-gateway-subnet'].id
+//     vnetName: vnetInfo.vnet.name
+//   }
+// }
+
+// var redisInfo = redisModule.outputs.redisInfo
 
 // ------------------
 // HINTR
@@ -269,8 +337,8 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('2')
-            memory: '4Gi'
+            cpu: json('1')
+            memory: '2Gi'
           }
           volumeMounts: [
             {
@@ -338,8 +406,8 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('2')
-            memory: '4Gi'
+            cpu: json('1')
+            memory: '2Gi'
           }
           volumeMounts: [
             {
@@ -424,67 +492,60 @@ param proxyImage string
 @description('External URL the proxy is at')
 var proxyUrl = '${proxyName}.${containerAppsEnvironment.properties.defaultDomain}'
 
-// resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
-//   name: proxyName
-//   location: location
-//   properties: {
-//     managedEnvironmentId: containerAppsEnvironment.id
-//     configuration: {
-//       ingress: {
-//         external: true
-//         targetPort: 80
-//         allowInsecure: true
-//       }
-//     }
-//     template: {
-//       containers: [
-//         {
-//           name: 'proxy'
-//           image: proxyImage
-//           args: [
-//             '${proxyUrl}'
-//             '80'
-//             '443'
-//           ]
-//           env: [
-//             {
-//               name: 'HINT_NAME'
-//               value: hintWebAppName
-//             }
-//             {
-//               name: 'HINTR_NAME'
-//               value: hintrName
-//             }
-//             {
-//               name: 'REDIS_NAME'
-//               value: redisName
-//             }
-//             {
-//               name: 'REDIS_PORT'
-//               value: '6379'
-//             }
-//             {
-//               name: 'REDIS_QUEUE_NAME'
-//               value: 'hintr:queue:run'
-//             }
-//           ]
-//           resources: {
-//             cpu: json('0.25')
-//             memory: '0.5Gi'
-//           }
-//         }
-//       ]
-//       scale: {
-//         minReplicas: 1
-//         maxReplicas: 1
-//       }
-//     }
-//     workloadProfileName: 'Consumption'
-//   }
-//   dependsOn: [
-//     hint
-//   ]
-// }
+resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
+  name: proxyName
+  location: location
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+        allowInsecure: true
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'proxy'
+          image: proxyImage
+          args: [
+            '${proxyUrl}'
+            '80'
+            '443'
+          ]
+          env: [
+            {
+              name: 'HINTR_NAME'
+              value: hintrName
+            }
+            {
+              name: 'REDIS_NAME'
+              value: redisInfo.hostname
+            }
+            {
+              name: 'REDIS_PORT'
+              value: redisInfo.port
+            }
+            {
+              name: 'REDIS_QUEUE_NAME'
+              value: 'hintr:queue:run'
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+    workloadProfileName: 'Consumption'
+  }
+}
 
 module workerJobModule './worker_job.bicep' = {
   name: 'workerJob'
@@ -493,10 +554,8 @@ module workerJobModule './worker_job.bicep' = {
     containerAppsEnvironmentName: containerAppsEnvironmentName
     workloadProfile: workerWorkloadProfileName
     hintrWorkerImage: hintrWorkerImage
+    proxyUrl: proxyUrl
     redisConnectionString: redisInfo.connectionString
-    redisHostname: redisInfo.hostname
-    redisPort: redisInfo.port
-    redisPassword: redisInfo.password
     resultsVolume: resultsVolume
     resultsMount: storageModule.outputs.storageInfo.results.mountNameRW
     uploadsVolume: uploadsVolume
@@ -504,6 +563,7 @@ module workerJobModule './worker_job.bicep' = {
   }
   dependsOn: [
     containerAppsEnvironment
+    proxy
   ]
 }
 

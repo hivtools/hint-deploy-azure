@@ -14,18 +14,11 @@ param containerAppsEnvironmentName string
 @description('Workload profile for workers')
 param workloadProfile string
 
+@description('URL (without scheme) proxy is deployed at')
+param proxyUrl string
+
 @description('String for connecting to Azure managed redis')
 param redisConnectionString string
-
-@description('hostname for azure managed redis')
-param redisHostname string
-
-@description('Port Azure managed redis is running on')
-param redisPort string
-
-@description('Password for Azure managed redis')
-@secure()
-param redisPassword string
 
 @description('Worker image name with registry and tag')
 param hintrWorkerImage string
@@ -109,12 +102,6 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
     }
     configuration: {
       triggerType: 'Event'
-      secrets: [
-        {
-          name: 'redis-password'
-          value: redisPassword
-        }
-      ]
       eventTriggerConfig: {
         parallelism: 10
         replicaCompletionCount: 1
@@ -125,18 +112,13 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           rules: [
             {
               name: 'job-queued-trigger'
-              type: 'redis'
+              type: 'metrics-api'
               metadata: {
-                address: '${redisHostname}:${redisPort}'
-                listName: '{hintr}:queue:run'
-                listLength: '1'
+                url: 'https://${proxyUrl}/queue-length'
+                targetValue: '1'
+                valueLocation: 'length'
+                method: 'GET'
               }
-              auth: [
-                {
-                  secretRef: 'redis-password'
-                  triggerParameter: 'password'
-                }
-              ]
             }
           ]
         }

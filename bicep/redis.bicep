@@ -93,6 +93,7 @@ resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2024-10-01' = {
   properties: {
     clientProtocol: 'Plaintext'
     clusteringPolicy: 'EnterpriseCluster'
+    evictionPolicy: 'noeviction'
     persistence: {
       aofEnabled: true
       aofFrequency: '1s'

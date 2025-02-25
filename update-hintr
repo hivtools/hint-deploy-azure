@@ -6,10 +6,6 @@ source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD
 
 ./common/azure_login
 
-export AZURE_HINT_CR_SERVER=$(az acr show --name $HINT_CR --resource-group $HINT_RESOURCE_GROUP --query loginServer --output tsv)
-export AZURE_HINT_CR_USERNAME=$(az acr credential show --name $HINT_CR --resource-group $HINT_RESOURCE_GROUP --query username --output tsv)
-export AZURE_HINT_CR_PASSWORD=$(az acr credential show --name $HINT_CR --resource-group $HINT_RESOURCE_GROUP --query passwords[0].value --output tsv)
-
 # Find the latest sha for this tag in ghcr
 ARM_PARAMS=$(az bicep build-params --file "production.bicepparam" --stdout)
 

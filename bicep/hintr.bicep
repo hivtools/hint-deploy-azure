@@ -31,7 +31,7 @@ param uploadsVolume string = 'uploads-volume'
 @description('Name of results volume')
 param resultsVolume string = 'results-volume'
 
-resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
+resource hintr 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: 'nm-hintr'
   location: location
   properties: {
@@ -112,7 +112,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
 // HINTR workers
 // ------------------
 
-resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
+resource hintrWorker 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: 'nm-hintr-worker'
   location: location
   properties: {

@@ -45,11 +45,6 @@ param resultsVolume string = 'results-volume'
 @description('Name of results mount')
 param resultsMount string = 'uploads-mount-rw'
 
-param azureCRUrl string
-param azureCRUsername string
-@secure()
-param azureCRPassword string
-
 // ------------------
 // HINTR workers
 // ------------------
@@ -95,12 +90,12 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
       volumes: [
         {
           name: uploadsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: uploadsMount
         }
         {
           name: resultsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: resultsMount
         }
       ]
@@ -128,19 +123,6 @@ resource hintrWorker 'Microsoft.App/jobs@2024-03-01' = {
           ]
         }
       }
-      registries: [
-        {
-          passwordSecretRef: 'registry-password'
-          server: azureCRUrl
-          username: azureCRUsername
-        }
-      ]
-      secrets: [
-        {
-          name: 'registry-password'
-          value: azureCRPassword
-        }
-      ]
       replicaTimeout: 500
       replicaRetryLimit: 1
     }

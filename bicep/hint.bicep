@@ -157,7 +157,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
     ]
     vnetConfiguration: {
       infrastructureSubnetId: vnetInfo.subnets['${prefix}-hintr-subnet'].id
-      internal: false
+      internal: true
     }
   }
 }
@@ -168,12 +168,10 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
 @description('The name of the external Azure Storage Account.')
 param storageAccountName string
 
-var storageSettings = {
+param storageSettings object = {
   storageAccountName: storageAccountName
   location: location
   containerAppEnvironmentName: containerAppsEnvironmentName
-  privateEndpointSubnet: vnetInfo.subnets['${prefix}-gateway-subnet'].id
-  vnetName: vnetInfo
   fileShares: {
     uploads: {
       name: 'uploads'
@@ -210,7 +208,7 @@ param redisVolume string = 'redis-volume'
 @description('Redis docker image to use')
 param redisImage string
 
-resource redis 'Microsoft.App/containerApps@2024-10-02-preview' = {
+resource redis 'Microsoft.App/containerApps@2024-03-01' = {
   name: redisName
   location: location
   properties: {
@@ -254,7 +252,7 @@ resource redis 'Microsoft.App/containerApps@2024-10-02-preview' = {
       volumes: [
         {
           name: redisVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: storageModule.outputs.storageInfo.redis.mountNameRW
         }
       ]
@@ -298,7 +296,7 @@ param resultsVolume string = 'results-volume'
 @description('Name of config volume')
 param configVolume string = 'config-volume'
 
-resource hintr 'Microsoft.App/containerApps@2024-10-02-preview' = {
+resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
   name: hintrName
   location: location
   properties: {
@@ -355,18 +353,18 @@ resource hintr 'Microsoft.App/containerApps@2024-10-02-preview' = {
         }
       ]
       scale: {
-        minReplicas: 0
+        minReplicas: 1
         maxReplicas: 2
       }
       volumes: [
         {
           name: uploadsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: storageModule.outputs.storageInfo.uploads.mountNameR
         }
         {
           name: resultsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: storageModule.outputs.storageInfo.results.mountNameRW
         }
       ]
@@ -385,7 +383,7 @@ param hintrWorkerName string
 @description('hintr worker docker image to use')
 param hintrWorkerImage string
 
-resource hintrWorker 'Microsoft.App/containerApps@2024-10-02-preview' = {
+resource hintrWorker 'Microsoft.App/containerApps@2024-03-01' = {
   name: hintrWorkerName
   location: location
   properties: {
@@ -430,12 +428,12 @@ resource hintrWorker 'Microsoft.App/containerApps@2024-10-02-preview' = {
       volumes: [
         {
           name: uploadsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: storageModule.outputs.storageInfo.uploads.mountNameR
         }
         {
           name: resultsVolume
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: storageModule.outputs.storageInfo.results.mountNameRW
         }
       ]
@@ -494,7 +492,7 @@ param proxyImage string
 @description('External URL the proxy is at')
 var proxyUrl = '${proxyName}.${containerAppsEnvironment.properties.defaultDomain}'
 
-resource proxy 'Microsoft.App/containerApps@2024-10-02-preview' = {
+resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
   name: proxyName
   location: location
   properties: {
@@ -549,16 +547,6 @@ resource proxy 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
-@description('Docker container registry URL')
-param azureCRUrl string
-
-@description('Docker container registry username')
-param azureCRUsername string
-
-@secure()
-@description('Azure Registry password')
-param azureCRPassword string
-
 module workerJobModule './worker_job.bicep' = {
   name: 'workerJob'
   params: {
@@ -572,9 +560,6 @@ module workerJobModule './worker_job.bicep' = {
     resultsMount: storageModule.outputs.storageInfo.results.mountNameRW
     uploadsVolume: uploadsVolume
     uploadsMount: storageModule.outputs.storageInfo.uploads.mountNameR
-    azureCRUrl: azureCRUrl
-    azureCRUsername: azureCRUsername
-    azureCRPassword: azureCRPassword
   }
   dependsOn: [
     containerAppsEnvironment
@@ -609,7 +594,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
     reserved: true
   }
   sku: {
-    name: 'P0V3'
+    name: 'P1V3'
   }
   kind: 'linux'
 }
@@ -641,208 +626,115 @@ param privateDnsName string = 'privatelink'
 @description('Fully Qualified DNS Private Zone for container apps')
 param privateDnsZoneName string = '${privateDnsName}.${location}.azurecontainerapps.io'
 
-// resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-//   name: privateEndpointName
-//   location: location
-//   properties: {
-//     subnet: {
-//       id: vnetInfo.subnets['${prefix}-gateway-subnet'].id
-//     }
-//     privateLinkServiceConnections: [
-//       {
-//         name: privateEndpointName
-//         properties: {
-//           privateLinkServiceId: containerAppsEnvironment.id
-//           groupIds: [
-//             'managedEnvironments'
-//           ]
-//         }
-//       }
-//     ]
-//   }
-// }
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: privateEndpointName
+  location: location
+  properties: {
+    subnet: {
+      id: vnetInfo.subnets['${prefix}-gateway-subnet'].id
+    }
+    privateLinkServiceConnections: [
+      {
+        name: privateEndpointName
+        properties: {
+          privateLinkServiceId: containerAppsEnvironment.id
+          groupIds: [
+            'managedEnvironments'
+          ]
+        }
+      }
+    ]
+  }
+}
 
 @description('Get just the ID of the container app environment')
 var containerAppUniqueId = split(containerAppsEnvironment.properties.defaultDomain, '.')[0]
 
-// module privateDnsZone 'ca_private_dns.bicep' = {
-//   name: privateDnsZoneName
-//   params: {
-//     dnsZoneName: privateDnsZoneName
-//     envDefaultDomain: containerAppUniqueId
-//     privateEndpointId: privateEndpoint.properties.networkInterfaces[0].id
-//     tags: {}
-//     vnetName: vnetInfo.vnet.name
-//   }
-// }
+module privateDnsZone 'ca_private_dns.bicep' = {
+  name: privateDnsZoneName
+  params: {
+    dnsZoneName: privateDnsZoneName
+    envDefaultDomain: containerAppUniqueId
+    privateEndpointId: privateEndpoint.properties.networkInterfaces[0].id
+    tags: {}
+    vnetName: vnetInfo.vnet.name
+  }
+}
 
-// resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
-//   name: hintWebAppName
-//   location: location
-//   kind: 'app,linux,container'
-//   properties: {
-//     serverFarmId: appServicePlan.id
-//     virtualNetworkSubnetId: vnetInfo.subnets['${prefix}-hint-subnet'].id
-//     siteConfig: {
-//       appSettings: [
-//         {
-//           name: 'AVENIR_ACCESS_TOKEN'
-//           value: avenirAccessToken
-//         }
-//         {
-//           name: 'APPLICATION_URL'
-//           value: 'https://${hintWebAppName}.azurewebsites.net'
-//         }
-//         {
-//           name: 'HINTR_URL'
-//           value: 'http://${hintr.properties.configuration.ingress.fqdn}'
-//         }
-//         {
-//           name: 'DB_URL'
-//           value: 'jdbc:postgresql://${dbInfo.hostname}/${dbInfo.databaseName}'
-//         }
-//         {
-//           name: 'DOCKER_REGISTRY_SERVER_URL'
-//           value: 'https://ghcr.io'
-//         }
-//         {
-//           name: 'WEBSITES_PORT'
-//           value: '8080'
-//         }
-//       ]
-//       linuxFxVersion: 'DOCKER|${hintImage}'
-//       appCommandLine: '--azure'
-//       azureStorageAccounts: {
-//         uploadsMount: {
-//           type: 'AzureFiles'
-//           protocol: 'Nfs'
-//           accountName: storageAccountName
-//           accessKey: storageAccount.listKeys().keys[0].value
-//           mountPath: '/uploads'
-//           shareName: storageModule.outputs.storageInfo.uploads.shareName
-//         }
-//         resultsMount: {
-//           type: 'AzureFiles'
-//           protocol: 'Nfs'
-//           accountName: storageAccountName
-//           accessKey: storageAccount.listKeys().keys[0].value
-//           mountPath: '/results'
-//           shareName: storageModule.outputs.storageInfo.results.shareName
-//         }
-//         configMount: {
-//           type: 'AzureFiles'
-//           protocol: 'Nfs'
-//           accountName: storageAccountName
-//           accessKey: storageAccount.listKeys().keys[0].value
-//           mountPath: '/etc/hint'
-//           shareName: storageModule.outputs.storageInfo.config.shareName
-//         }
-//       }
-//     }
-//   }
-// }
-
-// resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-//   name: hintWebApp.name
-//   scope: hintWebApp
-//   properties: {
-//     workspaceId: logAnalyticsWorkspace.id
-//     metrics: [
-//       {
-//         category: 'AllMetrics'
-//         enabled: true
-//       }
-//     ]
-//   }
-// }
-
-resource hint 'Microsoft.App/containerApps@2024-03-01' = {
+resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
   name: hintWebAppName
   location: location
+  kind: 'app,linux,container'
   properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8080
-        allowInsecure: true
-      }
-      secrets: [
+    serverFarmId: appServicePlan.id
+    virtualNetworkSubnetId: vnetInfo.subnets['${prefix}-hint-subnet'].id
+    siteConfig: {
+      appSettings: [
         {
-          name: 'avenir-access-token'
+          name: 'AVENIR_ACCESS_TOKEN'
           value: avenirAccessToken
         }
-      ]
-    }
-    template: {
-      containers: [
         {
-          name: 'hint'
-          image: hintImage
-          command: [
-            '/entrypoint_azure'
-          ]
-          env: [
-            {
-              name: 'AVENIR_ACCESS_TOKEN'
-              secretRef: 'avenir-access-token'
-            }
-            {
-              name: 'APPLICATION_URL'
-              value: 'https://${hintWebAppName}.${containerAppsEnvironment.properties.defaultDomain}'
-            }
-            {
-              name: 'HINTR_URL'
-              value: 'http://nm-hintr'
-            }
-            {
-              name: 'DB_URL'
-              value: 'jdbc:postgresql://${dbInfo.hostname}/${dbInfo.databaseName}'
-            }
-          ]
-          resources: {
-            cpu: json('2')
-            memory: '4Gi'
-          }
-          volumeMounts: [
-            {
-              volumeName: uploadsVolume
-              mountPath: '/uploads'
-            }
-            {
-              volumeName: resultsVolume
-              mountPath: '/results'
-            }
-            {
-              volumeName: configVolume
-              mountPath: '/etc/hint'
-            }
-          ]
+          name: 'APPLICATION_URL'
+          value: 'https://${hintWebAppName}.azurewebsites.net'
+        }
+        {
+          name: 'HINTR_URL'
+          value: 'http://${hintr.properties.configuration.ingress.fqdn}'
+        }
+        {
+          name: 'DB_URL'
+          value: 'jdbc:postgresql://${dbInfo.hostname}/${dbInfo.databaseName}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://ghcr.io'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8080'
         }
       ]
-      scale: {
-        minReplicas: 0
-        maxReplicas: 1
+      linuxFxVersion: 'DOCKER|${hintImage}'
+      appCommandLine: '--azure'
+      azureStorageAccounts: {
+        uploadsMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/uploads'
+          shareName: storageModule.outputs.storageInfo.uploads.shareName
+
+        }
+        resultsMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/results'
+          shareName: storageModule.outputs.storageInfo.results.shareName
+        }
+        configMount: {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          accessKey: storageAccount.listKeys().keys[0].value
+          mountPath: '/etc/hint'
+          shareName: storageModule.outputs.storageInfo.config.shareName
+        }
       }
-      volumes: [
-        {
-          name: uploadsVolume
-          storageType: 'NfsAzureFile'
-          storageName: storageModule.outputs.storageInfo.uploads.mountNameRW
-        }
-        {
-          name: resultsVolume
-          storageType: 'NfsAzureFile'
-          storageName: storageModule.outputs.storageInfo.results.mountNameR
-          mountOptions: 'nconnect=4,rsize=32768,wsize=32768,intr,noatime'
-        }
-        {
-          name: configVolume
-          storageType: 'NfsAzureFile'
-          storageName: storageModule.outputs.storageInfo.config.mountNameRW
-        }
-      ]
     }
-    workloadProfileName: 'Consumption'
+  }
+}
+
+resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: hintWebApp.name
+  scope: hintWebApp
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
   }
 }

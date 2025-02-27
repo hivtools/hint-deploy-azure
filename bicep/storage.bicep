@@ -4,15 +4,6 @@ param storageSettings object
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageSettings.storageAccountName
   location: storageSettings.location
-  properties: {
-    publicNetworkAccess: 'Disabled'
-    networkAcls: {
-      bypass: 'AzureServices'
-      virtualNetworkRules: []
-      ipRules: []
-      defaultAction: 'Deny'
-    }
-  }
   sku: {
     name: 'Premium_LRS'
   }
@@ -38,81 +29,36 @@ resource fileShares 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-
   name: share.shareName
   properties: {
     accessTier: 'Premium'
-    enabledProtocols: 'NFS'
   }
 }]
-
-resource storagePrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: '${storageSettings.storageAccountName}-privateendpoint'
-  location: storageSettings.location
-  properties: {
-    privateLinkServiceConnections: [
-      {
-        name: '${storageSettings.storageAccountName}-privateendpoint'
-        properties: {
-          privateLinkServiceId: storageAccount.id
-          groupIds: [
-            'file'
-          ]
-        }
-      }
-    ]
-    subnet: {
-      id: storageSettings.privateEndpointSubnet
-    }
-  }
-}
-
-var privateDnsZoneName = 'privatelink.file.${environment().suffixes.storage}'
-resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
-  name: privateDnsZoneName
-  location: 'global'
-}
-
-// resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
-//   name: storageSettings.vnetName
-// }
-
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = {
-  parent: storagePrivateEndpoint
-  name: 'storage-endpoint-dns-group'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: privateDnsZone.name
-        properties: {
-          privateDnsZoneId: privateDnsZone.id
-        }
-      }
-    ]
-  }
-}
 
 resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: storageSettings.containerAppEnvironmentName
 }
 
 @description('Create configured storage mounts')
-resource storageMountsRW 'Microsoft.App/managedEnvironments/storages@2024-10-02-preview' = [for (share, i) in fileShareSettings: {
+resource storageMountsRW 'Microsoft.App/managedEnvironments/storages@2024-03-01' = [for (share, i) in fileShareSettings: {
   parent: containerAppEnvironment
   name: share.mountNameRW
   properties: {
-    nfsAzureFile: {
-      shareName: '/${storageSettings.storageAccountName}/${fileShares[i].name}'
-      server: '${storageSettings.storageAccountName}.${privateDnsZoneName}'
+    azureFile: {
+      accountName: storageAccount.name
+      shareName: fileShares[i].name
+      accountKey: storageAccount.listKeys().keys[0].value
       accessMode: 'ReadWrite'
     }
   }
 }]
 
 @description('Create configured storage mounts')
-resource storageMountsR 'Microsoft.App/managedEnvironments/storages@2024-10-02-preview' = [for (share, i) in fileShareSettings: {
+resource storageMountsR 'Microsoft.App/managedEnvironments/storages@2024-03-01' = [for (share, i) in fileShareSettings: {
   parent: containerAppEnvironment
   name: share.mountNameR
   properties: {
-    nfsAzureFile: {
-      shareName: '/${storageSettings.storageAccountName}/${fileShares[i].name}'
-      server: '${storageSettings.storageAccountName}.${privateDnsZoneName}'
+    azureFile: {
+      accountName: storageAccount.name
+      shareName: fileShares[i].name
+      accountKey: storageAccount.listKeys().keys[0].value
       accessMode: 'ReadOnly'
     }
   }

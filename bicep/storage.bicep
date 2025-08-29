@@ -1,67 +1,95 @@
-@description('Storage settings object')
-param storageSettings object
+// ------------------
+//    PARAMETERS
+// ------------------
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
-  name: storageSettings.storageAccountName
-  location: storageSettings.location
-  sku: {
-    name: 'Premium_LRS'
-  }
-  kind: 'FileStorage'
+@description('The location where the resources will be created.')
+param location string = resourceGroup().location
+
+@description('The prefix to use for all resource names')
+param prefix string = 'nm'
+
+@description('The name of the external Azure Storage Account.')
+param storageAccountName string
+
+@description('Name of the existing vnet resource')
+param vnetName string
+
+@description('File shares to create')
+param fileShares array
+
+resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
+  name: vnetName
 }
 
-@description('Create file service')
-resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2023-05-01' = {
-  parent: storageAccount
-  name: 'default'
+resource gatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' existing = {
+  name: '${prefix}-gateway-subnet'
+  parent: vnet
 }
 
-var fileShareSettings = [for share in items(storageSettings.fileShares): {
-  name: share.value.name
-  shareName: '${share.value.name}-share'
-  mountNameRW: '${share.value.name}-mount-rw'
-  mountNameR: '${share.value.name}-mount-r'
-}]
+// ------------------
+// File shares
+// ------------------
 
-@description('Create configured file shares')
-resource fileShares 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-05-01' = [for share in fileShareSettings: {
-  parent: fileService
-  name: share.shareName
-  properties: {
-    accessTier: 'Premium'
-  }
-}]
-
-resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
-  name: storageSettings.containerAppEnvironmentName
+param storageSettings object = {
+  storageAccountName: storageAccountName
+  location: location
+  fileShares: fileShares
 }
 
-@description('Create configured storage mounts')
-resource storageMountsRW 'Microsoft.App/managedEnvironments/storages@2024-03-01' = [for (share, i) in fileShareSettings: {
-  parent: containerAppEnvironment
-  name: share.mountNameRW
-  properties: {
-    azureFile: {
-      accountName: storageAccount.name
-      shareName: fileShares[i].name
-      accountKey: storageAccount.listKeys().keys[0].value
-      accessMode: 'ReadWrite'
-    }
+module storageModule 'storage/file_shares.bicep' = {
+  name: 'storageDeploy'
+  params: {
+    storageSettings: storageSettings
   }
-}]
+}
 
-@description('Create configured storage mounts')
-resource storageMountsR 'Microsoft.App/managedEnvironments/storages@2024-03-01' = [for (share, i) in fileShareSettings: {
-  parent: containerAppEnvironment
-  name: share.mountNameR
-  properties: {
-    azureFile: {
-      accountName: storageAccount.name
-      shareName: fileShares[i].name
-      accountKey: storageAccount.listKeys().keys[0].value
-      accessMode: 'ReadOnly'
-    }
+// ------------------
+// REDIS
+// ------------------
+
+@description('Name of the redis service')
+param redisName string
+
+@description('Name of the redis database')
+param redisDbName string
+
+@description('Name of redis private DNS zone')
+param redisPrivateDnsZoneName string
+
+module redisModule 'storage/redis.bicep' = {
+  name: 'redis-module'
+  params: {
+    privateEndpointSubnet: gatewaySubnet.id
+    vnetName: vnetName
+    redisName: redisName
+    redisDbName: redisDbName
+    redisPrivateDnsZoneName: redisPrivateDnsZoneName
   }
-}]
+}
 
-output storageInfo object = toObject(fileShareSettings, entry => entry.name)
+// ------------------
+// Database
+// ------------------
+
+@secure()
+@description('PostgreSQL administrator password')
+param adminDbPassword string
+
+@description('Name for the hint postgres database')
+param databaseName string
+
+module dbModule 'storage/db.bicep' = {
+  name: 'dbDeploy'
+  params: {
+    prefix: prefix
+    adminDbPassword: adminDbPassword
+    vnetName: vnetName
+    databaseName: databaseName
+  }
+}
+
+output storageInfo object = {
+  db: dbModule.outputs.dbInfo
+  redis: redisModule.outputs.redisInfo
+  shares: storageModule.outputs.storageInfo
+}

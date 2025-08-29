@@ -17,11 +17,13 @@ STORAGE_ACCOUNT_KEY=$(az storage account keys list --resource-group $HINT_RESOUR
 az container create \
   --resource-group $HINT_RESOURCE_GROUP \
   --name hint-user-cli \
-  --image ghcr.io/mrc-ide/hint-user-cli:azure-entrypoint \
+  --image ghcr.io/hivtools/hint-user-cli:nm-115 \
   --command-line "/bin/sh -c '/userCLI/bin/userCLI $COMMAND_ARGS'" \
+  --os-type Linux \
+  --cpu 0.25 --memory 0.5 \
   -e DB_URL=jdbc:postgresql://nm-hint-db.postgres.database.azure.com/hint \
   HINTR_URL=http://nm-hintr \
-  APPLICATION_URL=https://nm-hint.icyfield-a41ed3df.eastus.azurecontainerapps.io \
+  APPLICATION_URL=https://nm-hint.azurewebsites.net \
   AVENIR_NM_EMAIL_PASSWORD=$AVENIR_NM_EMAIL_PASSWORD \
   AVENIR_NM_ISSUE_REPORT_URL=$AVENIR_NM_ISSUE_REPORT_URL \
   AVENIR_NM_DB_PASSWORD=$AVENIR_NM_DB_PASSWORD \

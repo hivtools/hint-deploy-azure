@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -e
+
+source ./common/set_env
+source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD
+
+./common/azure_login
+
+az stack group create \
+  --name $NETWORK_DEPLOYMENT_STACK \
+  --resource-group $HINT_RESOURCE_GROUP \
+  --template-file bicep/network.bicep \
+  --parameters params/production/network.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none
+
+  az stack group create \
+  --name $STORAGE_DEPLOYMENT_STACK \
+  --resource-group $HINT_RESOURCE_GROUP \
+  --template-file bicep/storage.bicep \
+  --parameters params/production/storage.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none
+
+az stack group create \
+  --name $ENVRIONMENT_DEPLOYMENT_STACK \
+  --resource-group $HINT_RESOURCE_GROUP \
+  --template-file bicep/app_environment.bicep \
+  --parameters params/production/app_environment.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none

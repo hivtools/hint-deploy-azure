@@ -1,0 +1,130 @@
+{
+    "workload_profiles": [
+        {
+            "name": "Consumption",
+            "workloadProfileType": "Consumption"
+        },
+        {
+            "name": "medium",
+            "workloadProfileType": "E4",
+            "minimumCount": 0,
+            "maximumCount": 2
+        },
+        {
+            "name": "large",
+            "workloadProfileType": "E8",
+            "minimumCount": 0,
+            "maximumCount": 2
+        }
+    ],
+    "workers": {
+        "consumption-small": {
+            "queue": [
+                "consumption-small"
+            ],
+            "heartbeat_period": 10,
+            "deployment_options": {
+                "resources": {
+                    "cpu": 2,
+                    "memory": "4Gi"
+                },
+                "workload_profile": "Consumption",
+                "timeout": 500
+            }
+        },
+        "consumption-large": {
+            "queue": [
+                "consumption-large"
+            ],
+            "heartbeat_period": 10,
+            "deployment_options": {
+                "resources": {
+                    "cpu": 4,
+                    "memory": "8Gi"
+                },
+                "workload_profile": "Consumption",
+                "timeout": 500
+            }
+        },
+        "dedicated-medium": {
+            "queue": [
+                "dedicated-medium"
+            ],
+            "heartbeat_period": 10,
+            "deployment_options": {
+                "resources": {
+                    "cpu": 4,
+                    "memory": "32Gi"
+                },
+                "workload_profile": "medium",
+                "timeout": 1200
+            }
+        },
+        "dedicated-large": {
+            "queue": [
+                "dedicated-large"
+            ],
+            "heartbeat_period": 10,
+            "deployment_options": {
+                "resources": {
+                    "cpu": 8,
+                    "memory": "64Gi"
+                },
+                "workload_profile": "large",
+                "timeout": 2400
+            }
+        }
+    },
+    "queues": {
+        "consumption-small": {
+            "jobs": {
+                "fit": [
+                    "COG",
+                    "AGO",
+                    "LSO",
+                    "GNB",
+                    "GAB",
+                    "ESW"
+                ],
+                "calibrate": "default",
+                "spectrum": "default",
+                "coarse_output": "default",
+                "summary": "default",
+                "comparison": "default",
+                "agyw": "default",
+                "datapack": "default",
+                "rehydrate": "default"
+            },
+            "wake_up": true
+        },
+        "consumption-large": {
+            "jobs": {
+                "fit": "default",
+                "summary": [
+                    "COD"
+                ]
+            },
+            "wake_up": false
+        },
+        "dedicated-medium": {
+            "jobs": {
+                "fit": [
+                    "TZA",
+                    "MOZ",
+                    "ETH",
+                    "ZMB"
+                ]
+            },
+            "wake_up": false
+        },
+        "dedicated-large": {
+            "jobs": {
+                "fit": [
+                    "COD"
+                ]
+            },
+            "wake_up": false,
+            "extra_memory_override": true
+        }
+    }
+}

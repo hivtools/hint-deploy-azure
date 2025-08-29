@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-export HINT_DEPLOYMENT_STACK="hint-stack"
+export NETWORK_DEPLOYMENT_STACK="network-stack"
+export STORAGE_DEPLOYMENT_STACK="storage-stack"
+export ENVRIONMENT_DEPLOYMENT_STACK="environment-stack"
+export CONTAINERS_DEPLOYMENT_STACK="containers-stack"
 export HINT_RESOURCE_GROUP="nmHint-RG"
-export HINT_STORAGE_ACCOUNT="hintappstorage"
+export HINT_STORAGE_ACCOUNT="hintappstoragepremium"

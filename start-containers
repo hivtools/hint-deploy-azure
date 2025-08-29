@@ -7,8 +7,9 @@ source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD
 ./common/azure_login
 
 az stack group create \
-  --name $HINT_DEPLOYMENT_STACK \
+  --name $CONTAINERS_DEPLOYMENT_STACK \
   --resource-group $HINT_RESOURCE_GROUP \
-  --parameters production.bicepparam \
+  --template-file bicep/containers.bicep \
+  --parameters params/production/containers.bicepparam \
   --action-on-unmanage deleteResources \
   --deny-settings-mode none

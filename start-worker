@@ -36,6 +36,5 @@ az deployment group create \
   --template-file bicep/worker_job.bicep \
   --parameters location=$(get_param "location") \
   containerAppsEnvironmentName=$(get_param "containerAppsEnvironmentName") \
-  workloadProfile=$(get_param "workerWorkloadProfileName") \
   redisName=$(get_param "redisName") \
   hintrWorkerImage=$HINTR_WORKER_REPO_PATH@$HINTR_WORKER_SHA

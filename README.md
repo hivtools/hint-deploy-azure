@@ -4,10 +4,22 @@ Repo for Naomi/hint azure deployment configuration. Configuration is via [bicep]
 
 ## Usage
 
-To deploy or update run
+To deploy a brand new app run
 
 ```
-./start 
+./start-all
+```
+
+To deploy just the infrastructure (the bits which don't change frequently) e.g. network, storage, environments
+
+```
+./start-infrastructure
+```
+
+To deploy the containers
+
+```
+./start-containers
 ```
 
 ### User CLI

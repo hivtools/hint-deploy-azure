@@ -42,9 +42,9 @@ param vnetSettings object = {
       public: false
     }
     {
-      name: '${prefix}-gateway-subnet'
+      name: '${prefix}-redis-subnet'
       addressPrefix: '10.0.5.0/24'
-      public: true
+      public: false
     }
   ]
 }

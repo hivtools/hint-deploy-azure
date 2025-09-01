@@ -35,7 +35,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06
 param workerConfigString string = loadTextContent('../../config/workers.json')
 param workerConfig object = json(workerConfigString)
 
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2025-02-02-preview' = {
   name: containerAppsEnvironmentName
   location: location
   properties: {
@@ -96,55 +96,16 @@ resource storageMountsR 'Microsoft.App/managedEnvironments/storages@2024-03-01' 
   }
 }]
 
+
 // ------------------
-// Private DNS for container apps
+// Private DNS
 // ------------------
-
-@description('Name for private endpoint to access container apps')
-param privateEndpointName string = 'containerapp'
-
-@description('DNS Zone name for container app')
-param privateDnsName string = 'privatelink'
-
-@description('Fully Qualified DNS Private Zone for container apps')
-param privateDnsZoneName string = '${privateDnsName}.${location}.azurecontainerapps.io'
-
-resource gatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' existing = {
-  name: '${prefix}-gateway-subnet'
-  parent: vnet
-}
-
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: privateEndpointName
-  location: location
-  properties: {
-    subnet: {
-      id: gatewaySubnet.id
-    }
-    privateLinkServiceConnections: [
-      {
-        name: privateEndpointName
-        properties: {
-          privateLinkServiceId: containerAppsEnvironment.id
-          groupIds: [
-            'managedEnvironments'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-@description('Get just the ID of the container app environment')
-var containerAppUniqueId = split(containerAppsEnvironment.properties.defaultDomain, '.')[0]
 
 module privateDnsZone 'ca_private_dns.bicep' = {
-  name: privateDnsZoneName
+  name: 'dns-zone-ca'
   params: {
-    dnsZoneName: privateDnsZoneName
-    envDefaultDomain: containerAppUniqueId
-    privateEndpointId: privateEndpoint.properties.networkInterfaces[0].id
-    tags: {}
-    vnetName: vnetName
+    envDefaultDomain: containerAppsEnvironment.properties.defaultDomain
+    envStaticIp: containerAppsEnvironment.properties.staticIp
+    vnetName: vnet.name
   }
 }

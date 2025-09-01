@@ -21,8 +21,8 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
   name: vnetName
 }
 
-resource gatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' existing = {
-  name: '${prefix}-gateway-subnet'
+resource redisSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' existing = {
+  name: '${prefix}-redis-subnet'
   parent: vnet
 }
 
@@ -59,7 +59,7 @@ param redisPrivateDnsZoneName string
 module redisModule 'storage/redis.bicep' = {
   name: 'redis-module'
   params: {
-    privateEndpointSubnet: gatewaySubnet.id
+    privateEndpointSubnet: redisSubnet.id
     vnetName: vnetName
     redisName: redisName
     redisDbName: redisDbName

@@ -11,21 +11,21 @@ az stack group create \
   --resource-group $HINT_RESOURCE_GROUP \
   --template-file bicep/network.bicep \
   --parameters params/production/network.bicepparam \
-  --action-on-unmanage deleteResources \
-  --deny-settings-mode none
+  --action-on-unmanage detachAll \
+  --deny-settings-mode denyDelete
 
   az stack group create \
   --name $STORAGE_DEPLOYMENT_STACK \
   --resource-group $HINT_RESOURCE_GROUP \
   --template-file bicep/storage.bicep \
   --parameters params/production/storage.bicepparam \
-  --action-on-unmanage deleteResources \
-  --deny-settings-mode none
+  --action-on-unmanage detachAll \
+  --deny-settings-mode denyDelete
 
 az stack group create \
   --name $ENVRIONMENT_DEPLOYMENT_STACK \
   --resource-group $HINT_RESOURCE_GROUP \
   --template-file bicep/app_environment.bicep \
   --parameters params/production/app_environment.bicepparam \
-  --action-on-unmanage deleteResources \
-  --deny-settings-mode none
+  --action-on-unmanage detachAll \
+  --deny-settings-mode denyDelete

@@ -97,7 +97,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
       ingress: {
-        external: false
+        external: true
         targetPort: 8888
         allowInsecure: true
       }
@@ -166,70 +166,6 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
           storageName: 'results-mount-rw'
         }
       ]
-    }
-    workloadProfileName: 'Consumption'
-  }
-}
-
-// ------------------
-// Reverse proxy
-// ------------------
-
-@description('reverse proxy name')
-param proxyName string = 'nm-proxy'
-
-@description('hint web app name')
-param proxyImage string
-
-@description('External URL the proxy is at')
-var proxyUrl = '${proxyName}.${containerAppsEnvironment.properties.defaultDomain}'
-
-resource proxy 'Microsoft.App/containerApps@2024-03-01' = {
-  name: proxyName
-  location: location
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 80
-        allowInsecure: true
-      }
-    }
-    template: {
-      containers: [
-        {
-          name: 'proxy'
-          image: proxyImage
-          args: [
-            '${proxyUrl}'
-            '80'
-            '443'
-          ]
-          env: [
-            {
-              name: 'HINTR_NAME'
-              value: hintrName
-            }
-            {
-              name: 'REDIS_NAME'
-              value: redisInfo.hostname
-            }
-            {
-              name: 'REDIS_PORT'
-              value: redisInfo.port
-            }
-          ]
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-      }
     }
     workloadProfileName: 'Consumption'
   }

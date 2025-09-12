@@ -95,7 +95,7 @@
                 "datapack": "default",
                 "rehydrate": "default"
             },
-            "wake_up": true
+            "wake_up": false
         },
         "consumption-large": {
             "jobs": {

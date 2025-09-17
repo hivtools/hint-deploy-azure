@@ -5,7 +5,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageSettings.storageAccountName
   location: storageSettings.location
   sku: {
-    name: 'Premium_LRS'
+    name: 'Premium_ZRS'
   }
   kind: 'FileStorage'
 }

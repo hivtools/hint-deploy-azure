@@ -11,5 +11,5 @@ az stack group create \
   --resource-group $HINT_RESOURCE_GROUP \
   --template-file bicep/containers.bicep \
   --parameters params/production/containers.bicepparam \
-  --action-on-unmanage deleteResources \
-  --deny-settings-mode none
+  --action-on-unmanage detachAll \
+  --deny-settings-mode denyDelete

@@ -2,7 +2,7 @@
 set -e
 
 # Specify your tenant ID here
-TENANT_ID="28927a05-4ff6-441e-88d9-16f2b63f4884"
+TENANT_ID="14b292c0-30d6-4933-b442-65f54ff20563"
 
 # Function to check if the user is logged in
 check_login() {

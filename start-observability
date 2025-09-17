@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+source ./common/set_env
+source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD
+
+./common/azure_login
+
+az stack group create \
+  --verbose --debug \
+  --name $NETWORK_DEPLOYMENT_STACK \
+  --resource-group $OBSERVABILITY_RESOURCE_GROUP \
+  --template-file bicep/observability.bicep \
+  --parameters params/production/observability.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none

@@ -5,7 +5,8 @@ param vnetName = '${prefix}-hint-nw'
 
 param fileShares = ['uploads', 'results', 'config']
 
-param storageAccountName = 'hintappstoragepremium'
-param logAnalyticsWorkspaceName = 'logAnalyticsWorkspaceName'
+param storageAccountName = 'naomiappstorage'
+param logAnalyticsWorkspaceName = 'naomiLogs'
+param logsResourceGroup = 'nmHint-logs-RG'
 param containerAppsEnvironmentName = '${prefix}-hint-env'
 param hintAppServicePlanName = '${prefix}-hint-SP'

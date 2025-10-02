@@ -23,7 +23,7 @@ az container create \
   --cpu 0.25 --memory 0.5 \
   -e DB_URL=jdbc:postgresql://nm-hint-db.postgres.database.azure.com/hint \
   HINTR_URL=http://nm-hintr \
-  APPLICATION_URL=https://nm-naomi.azurewebsites.net \
+  APPLICATION_URL=https://naomi.unaids.org \
   AVENIR_NM_EMAIL_PASSWORD=$AVENIR_NM_EMAIL_PASSWORD \
   AVENIR_NM_ISSUE_REPORT_URL=$AVENIR_NM_ISSUE_REPORT_URL \
   AVENIR_NM_DB_PASSWORD=$AVENIR_NM_DB_PASSWORD \

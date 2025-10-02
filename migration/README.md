@@ -14,6 +14,7 @@ Contains migration plan from on-prem onto the cloud. There are a few bits of dat
 
 ## Plan
 
+1. Back up the current production using privateer
 1. Install azure CLI onto server and authenticate
     ```
     curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash

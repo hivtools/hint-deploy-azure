@@ -8,7 +8,7 @@ source ./common/fetch_and_set_secret_env AVENIR_NM_DB_PASSWORD
 
 az stack group create \
   --name $BACKUP_DEPLOYMENT_STACK \
-  --resource-group $HINT_RESOURCE_GROUP \
+  --resource-group $BACKUP_RESOURCE_GROUP \
   --template-file bicep/backup.bicep \
   --parameters params/production/backup.bicepparam \
   --action-on-unmanage deleteResources \

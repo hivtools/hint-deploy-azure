@@ -16,11 +16,12 @@ resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2023-05-01'
   name: 'default'
 }
 
-var fileShareSettings = [for shareName in storageSettings.fileShares: {
-  name: shareName
-  shareName: '${shareName}-share'
-  mountNameRW: '${shareName}-mount-rw'
-  mountNameR: '${shareName}-mount-r'
+var fileShareSettings = [for share in items(storageSettings.fileShares): {
+  name: share.value.name
+  shareName: '${share.value.name}-share'
+  mountNameRW: '${share.value.name}-mount-rw'
+  mountNameR: '${share.value.name}-mount-r'
+  size: share.value.size
 }]
 
 @description('Create configured file shares')
@@ -29,6 +30,7 @@ resource fileShares 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-
   name: share.shareName
   properties: {
     accessTier: 'Premium'
+    shareQuota: share.size
   }
 }]
 

@@ -135,8 +135,8 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('1')
-            memory: '2Gi'
+            cpu: json('2')
+            memory: '4Gi'
           }
           volumeMounts: [
             {

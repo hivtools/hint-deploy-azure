@@ -14,8 +14,8 @@ param storageAccountName string
 @description('Name of the existing vnet resource')
 param vnetName string
 
-@description('File shares to create')
-param fileShares array
+@description('File shares to create and their sizes')
+param fileShares object
 
 resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
   name: vnetName

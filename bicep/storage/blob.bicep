@@ -5,7 +5,7 @@ resource blobSA 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   name: blobSettings.storageAccountName
   location: blobSettings.location
   sku: {
-    name: 'Standard_ZRS'
+    name: 'Standard_LRS'
   }
   kind: 'StorageV2'
   properties: {

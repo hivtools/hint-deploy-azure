@@ -248,6 +248,7 @@ resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     virtualNetworkSubnetId: hintSubnet.id
+    httpsOnly: true
     siteConfig: {
       appSettings: [
         {
@@ -256,7 +257,7 @@ resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'APPLICATION_URL'
-          value: 'https://${hintWebAppName}.azurewebsites.net'
+          value: 'https://naomi.unaids.org'
         }
         {
           name: 'HINTR_URL'

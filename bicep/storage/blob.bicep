@@ -18,11 +18,6 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-01-01
   name: 'default'
 }
 
-resource redisBackupContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = {
-  parent: blobServices
-  name: 'redis-backup'
-}
-
 resource dataMigrationContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = {
   parent: blobServices
   name: 'data-migration'

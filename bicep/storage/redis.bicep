@@ -13,18 +13,19 @@ param redisDbName string
 @description('Location of all resources')
 param location string = resourceGroup().location
 
-resource redis 'Microsoft.Cache/redisEnterprise@2025-05-01-preview' = {
+resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   name: redisName
   location: location
   properties: {
     minimumTlsVersion: '1.2'
+    publicNetworkAccess: 'Disabled'
   }
   sku: {
     name: 'Balanced_B0'
   }
 }
 
-resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-05-01-preview' = {
+resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-08-01-preview' = {
   parent: redis
   name: redisDbName
   properties: {

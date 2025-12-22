@@ -453,7 +453,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           type: 'http'
           inputs: {
             method: 'POST'
-            uri: '${managementUrl}/subscriptions/${subscription().subscriptionId}/resourceGroups/${hintResourceGroup}/providers/Microsoft.Cache/redisEnterprise/${redisName}/databases/default/export?api-version=2025-07-01'
+            uri: '${managementUrl}/subscriptions/${subscription().subscriptionId}/resourceGroups/${hintResourceGroup}/providers/Microsoft.Cache/redisEnterprise/${redisName}/databases/default/export?api-version=2025-08-01'
             body: {
               sasUri: sasTokenFixed
             }

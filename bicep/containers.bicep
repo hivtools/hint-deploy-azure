@@ -27,11 +27,11 @@ param redisDbName string
 @description('Name of redis private DNS zone')
 param redisPrivateDnsZoneName string
 
-resource redis 'Microsoft.Cache/redisEnterprise@2025-05-01-preview' existing = {
+resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' existing = {
   name: redisName
 }
 
-resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-05-01-preview' existing = {
+resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-08-01-preview' existing = {
   name: redisDbName
   parent: redis
 }
@@ -152,7 +152,7 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
       ]
       scale: {
         minReplicas: 0
-        maxReplicas: 2
+        maxReplicas: 4
       }
       volumes: [
         {

@@ -126,7 +126,7 @@ resource hintrWorkerJobs 'Microsoft.App/jobs@2025-02-02-preview' = [for worker i
         }
       ]
       eventTriggerConfig: {
-        parallelism: 10
+        parallelism: 1
         replicaCompletionCount: 1
         scale: {
           minExecutions: 0

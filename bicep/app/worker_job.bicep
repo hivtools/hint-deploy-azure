@@ -11,8 +11,8 @@ param containerAppsEnvironmentName string
 @description('String for connecting to Azure managed redis')
 param redisConnectionString string
 
-@description('String for connecting to Azure managed redis')
-param redisConnectionStringNoProtocol string
+@description('URL for the Azure function app to get number of active jobs')
+param activeJobsFAUrl string
 
 @description('Worker image name with registry and tag')
 param hintrWorkerImage string
@@ -20,10 +20,6 @@ param hintrWorkerImage string
 @description('Worker configuration string')
 param workerConfigString string
 var workerConfig object = json(workerConfigString)
-
-@description('Key to access redis')
-@secure()
-param redisKey string
 
 // ------------------
 //    EXISTING RESOURCES
@@ -119,12 +115,6 @@ resource hintrWorkerJobs 'Microsoft.App/jobs@2025-02-02-preview' = [for worker i
     }
     configuration: {
       triggerType: 'Event'
-      secrets: [
-        {
-          name: 'redis-key'
-          value: redisKey
-        }
-      ]
       eventTriggerConfig: {
         parallelism: 1
         replicaCompletionCount: 1
@@ -135,18 +125,13 @@ resource hintrWorkerJobs 'Microsoft.App/jobs@2025-02-02-preview' = [for worker i
           rules: [
             {
               name: 'job-queued-trigger'
-              type: 'redis'
+              type: 'metrics-api'
               metadata: {
-                address: redisConnectionStringNoProtocol
-                listName: 'hintr:queue:${worker.queue}'
-                listLength: '1'
+                url: '${activeJobsFAUrl}?queue=${worker.queue}'
+                targetValue: '1'
+                valueLocation: 'activeJobs'
+                method: 'GET'
               }
-              auth: [
-                {
-                  secretRef: 'redis-key'
-                  triggerParameter: 'password'
-                }
-              ]
             }
           ]
         }

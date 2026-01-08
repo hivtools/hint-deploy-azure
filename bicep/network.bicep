@@ -46,6 +46,12 @@ param vnetSettings object = {
       addressPrefix: '10.0.5.0/24'
       public: false
     }
+    {
+      name: '${prefix}-functionapp-subnet'
+      addressPrefix: '10.0.6.0/24'
+      service: 'Microsoft.App/environments'
+      public: false
+    }
   ]
 }
 

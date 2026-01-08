@@ -27,3 +27,6 @@ param fileShares = {
 param redisName = '${prefix}-hintr-queue'
 param redisDbName = 'default'
 param redisPrivateDnsZoneName = 'privatelink.eastus2.redis.azure.net'
+
+param faBlobStorageAccountName = 'naomifappstorage'
+param faStorageContainerName = 'active-jobs'

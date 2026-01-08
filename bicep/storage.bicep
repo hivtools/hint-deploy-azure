@@ -11,6 +11,12 @@ param prefix string = 'nm'
 @description('The name of the external Azure Storage Account.')
 param storageAccountName string
 
+@description('The name of the blob storage for function app.')
+param faBlobStorageAccountName string
+
+@description('The name of the function app storage container')
+param faStorageContainerName string
+
 @description('Name of the existing vnet resource')
 param vnetName string
 
@@ -40,6 +46,23 @@ module storageModule 'storage/file_shares.bicep' = {
   name: 'storageDeploy'
   params: {
     storageSettings: storageSettings
+  }
+}
+
+// ------------------
+// Function app blob storage
+// ------------------
+
+param faBlobSettings object = {
+  storageAccountName: faBlobStorageAccountName
+  faStorageContainerName: faStorageContainerName
+  location: location
+}
+
+module faStorageModule 'storage/fa_blob.bicep' = {
+  name: 'faBlobStorage'
+  params: {
+    faBlobSettings: faBlobSettings
   }
 }
 
@@ -92,4 +115,5 @@ output storageInfo object = {
   db: dbModule.outputs.dbInfo
   redis: redisModule.outputs.redisInfo
   shares: storageModule.outputs.storageInfo
+  faBlobStorage: faStorageModule.outputs.blobInfo
 }

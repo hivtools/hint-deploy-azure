@@ -4,6 +4,7 @@ param avenirAccessToken = readEnvironmentVariable('AVENIR_ACCESS_TOKEN')
 
 param prefix = 'nm'
 param vnetName = '${prefix}-hint-nw'
+param hintResourceGroup = 'nmHint-RG'
 
 param storageAccountName = 'naomiappstorage'
 param logAnalyticsWorkspaceName = 'naomiLogs'
@@ -16,6 +17,10 @@ param postgresServerName = '${prefix}-hint-db'
 param redisName = '${prefix}-hintr-queue'
 param redisDbName = 'default'
 param redisPrivateDnsZoneName = 'privatelink.eastus2.redis.azure.net'
+
+param faBlobStorageAccountName = 'naomifappstorage'
+param faStorageContainerName = 'active-jobs'
+param activeJobsFunctionAppName = '${prefix}-active-jobs'
 
 param hintImage = 'ghcr.io/hivtools/hint:main'
 param hintrImage = 'ghcr.io/hivtools/hintr:main'

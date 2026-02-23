@@ -109,6 +109,7 @@
         "dedicated-medium": {
             "jobs": {
                 "fit": [
+                    "BFA",
                     "TZA",
                     "MOZ",
                     "ETH",

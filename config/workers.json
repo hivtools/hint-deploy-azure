@@ -110,6 +110,7 @@
             "jobs": {
                 "fit": [
                     "BFA",
+                    "GHA",
                     "TZA",
                     "MOZ",
                     "ETH",

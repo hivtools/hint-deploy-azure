@@ -110,10 +110,11 @@
             "jobs": {
                 "fit": [
                     "BFA",
-                    "GHA",
-                    "TZA",
-                    "MOZ",
                     "ETH",
+                    "GHA",
+                    "MOZ",
+                    "TZA",
+                    "UGA",
                     "ZMB"
                 ]
             },

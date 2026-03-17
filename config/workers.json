@@ -110,10 +110,10 @@
             "jobs": {
                 "fit": [
                     "BFA",
+                    "CIV",
                     "ETH",
                     "GHA",
                     "MOZ",
-                    "TZA",
                     "UGA",
                     "ZMB"
                 ]
@@ -123,7 +123,8 @@
         "dedicated-large": {
             "jobs": {
                 "fit": [
-                    "COD"
+                    "COD",
+                    "TZA"
                 ]
             },
             "wake_up": false,

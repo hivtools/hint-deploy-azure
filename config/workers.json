@@ -115,7 +115,8 @@
                     "GHA",
                     "MOZ",
                     "UGA",
-                    "ZMB"
+                    "ZMB",
+		    "ZWE"
                 ]
             },
             "wake_up": false

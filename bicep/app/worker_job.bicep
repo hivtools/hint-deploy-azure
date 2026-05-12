@@ -130,7 +130,6 @@ resource hintrWorkerJobs 'Microsoft.App/jobs@2025-02-02-preview' = [for worker i
                 url: '${activeJobsFAUrl}?queue=${worker.queue}'
                 targetValue: '1'
                 valueLocation: 'activeJobs'
-                method: 'GET'
               }
             }
           ]

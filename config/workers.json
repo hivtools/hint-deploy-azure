@@ -113,7 +113,6 @@
                     "CIV",
                     "ETH",
                     "GHA",
-                    "MOZ",
                     "UGA",
                     "ZMB",
 		    "ZWE"
@@ -125,7 +124,8 @@
             "jobs": {
                 "fit": [
                     "COD",
-                    "TZA"
+                    "TZA",
+                    "MOZ"
                 ]
             },
             "wake_up": false,

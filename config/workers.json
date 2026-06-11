@@ -111,11 +111,12 @@
                 "fit": [
                     "BFA",
                     "CIV",
+                    "CMR",
                     "ETH",
                     "GHA",
                     "UGA",
                     "ZMB",
-		    "ZWE"
+		            "ZWE"
                 ]
             },
             "wake_up": false

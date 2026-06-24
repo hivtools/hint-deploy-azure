@@ -15,6 +15,12 @@
             "workloadProfileType": "E8",
             "minimumCount": 0,
             "maximumCount": 2
+        },
+        {
+            "name": "larger",
+            "workloadProfileType": "E16",
+            "minimumCount": 0,
+            "maximumCount": 2
         }
     ],
     "workers": {
@@ -73,6 +79,20 @@
                 "workload_profile": "large",
                 "timeout": 2400
             }
+        },
+         "dedicated-larger": {
+            "queue": [
+                "dedicated-larger"
+            ],
+            "heartbeat_period": 10,
+            "deployment_options": {
+                "resources": {
+                    "cpu": 16,
+                    "memory": "128Gi"
+                },
+                "workload_profile": "larger",
+                "timeout": 2400
+            }
         }
     },
     "queues": {
@@ -124,13 +144,20 @@
         "dedicated-large": {
             "jobs": {
                 "fit": [
-                    "COD",
                     "TZA",
                     "MOZ"
                 ]
             },
             "wake_up": false,
             "extra_memory_override": true
+        },
+        "dedicated-larger": {
+            "jobs": {
+                "fit": [
+                    "COD"
+                ]
+            },
+            "wake_up": false
         }
     }
 }

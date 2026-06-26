@@ -91,7 +91,7 @@
                     "memory": "128Gi"
                 },
                 "workload_profile": "larger",
-                "timeout": 2400
+                "timeout": 7200
             }
         }
     },

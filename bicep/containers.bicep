@@ -357,11 +357,11 @@ resource diagnosticLogsWA 'Microsoft.Insights/diagnosticSettings@2021-05-01-prev
   scope: hintWebApp
   properties: {
     workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      { categoryGroup: 'allLogs', enabled: true }
+    ]
     metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
+      { category: 'AllMetrics', enabled: true }
     ]
   }
 }

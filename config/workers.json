@@ -131,7 +131,6 @@
                 "fit": [
                     "BFA",
                     "CIV",
-                    "CMR",
                     "ETH",
                     "GHA",
                     "UGA",
@@ -144,6 +143,7 @@
         "dedicated-large": {
             "jobs": {
                 "fit": [
+                    "CMR",
                     "TZA",
                     "MOZ"
                 ]

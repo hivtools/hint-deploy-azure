@@ -44,17 +44,25 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2025-02-02-
   location: location
   properties: {
     appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalyticsWorkspace.properties.customerId
-        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
-      }
+      destination: 'azure-monitor'
     }
     workloadProfiles: workerConfig.workload_profiles
     vnetConfiguration: {
       infrastructureSubnetId: containerAppSubnet.id
       internal: true
     }
+  }
+}
+
+resource diagnosticLogsEnv 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: containerAppsEnvironment.name
+  scope: containerAppsEnvironment
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      { category: 'ContainerAppConsoleLogs', enabled: true }
+      { category: 'ContainerAppSystemLogs', enabled: true }
+    ]
   }
 }
 

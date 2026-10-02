@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+source ./common/set_env
+source ./common/fetch_and_set_secret_env AVENIR_NM_SLACK_WEBHOOK_URL
+
+./common/azure_login
+
+az stack group create \
+  --name $ALERTS_DEPLOYMENT_STACK \
+  --resource-group $OBSERVABILITY_RESOURCE_GROUP \
+  --template-file bicep/alerts.bicep \
+  --parameters params/production/alerts.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none

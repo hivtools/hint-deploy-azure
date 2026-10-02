@@ -1,0 +1,12 @@
+// Worker replicas that have been waiting more than 10 minutes for a node.
+// A dedicated node normally takes up to ~2.5 mins to start from cold. While it
+// starts Azure often logs "Maximum Allowed Cores exceeded" (NotTriggerScaleUp)
+// even though the replica is placed seconds later, so we alert on the wait
+// rather than that message.
+ContainerAppSystemLogs
+| where isnotempty(JobName) and isnotempty(ReplicaName)
+| summarize
+    PendingFrom = minif(TimeGenerated, Reason == "AssigningReplicaFailed"),
+    PlacedAt = minif(TimeGenerated, Reason == "AssigningReplica")
+    by ReplicaName, JobName
+| where isnotnull(PendingFrom) and isnull(PlacedAt) and PendingFrom < ago(10m)

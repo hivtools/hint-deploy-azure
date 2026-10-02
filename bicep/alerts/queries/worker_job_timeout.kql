@@ -1,0 +1,27 @@
+// Worker jobs killed for running longer than their replica timeout, and the
+// hintr task they were running. The system log only tells us the job, so find
+// the task which started ~1 timeout before the kill and never finished.
+// {{JOB_TIMEOUTS}} is filled in from config/workers.json by alerts.bicep
+let jobTimeouts = datatable(JobName: string, TimeoutSec: int) [{{JOB_TIMEOUTS}}];
+let killed = ContainerAppSystemLogs
+    | where TimeGenerated > ago(15m)
+    | where Reason == "DeadlineExceeded"
+    | project KilledAt = TimeGenerated, JobName;
+let unfinishedTasks = ContainerAppConsoleLogs
+    | where ContainerName startswith "hintr-" and ContainerName endswith "-job"
+    | where Log has "TASK_"
+    | extend JobName = strcat("nm-", ContainerName)
+    | summarize
+        TaskId = take_anyif(extract(@"TASK_START (\w+)", 1, Log), Log has "TASK_START"),
+        TaskStart = minif(TimeGenerated, Log has "TASK_START"),
+        Finished = countif(Log has_any ("TASK_COMPLETE", "TASK_ERROR", "TASK_DIED"))
+        by ContainerGroupName, JobName
+    | where isnotempty(TaskId) and Finished == 0;
+let killedTasks = killed
+    | lookup jobTimeouts on JobName
+    | join kind=inner unfinishedTasks on JobName
+    | where TaskStart between ((KilledAt - TimeoutSec * 1s) .. (KilledAt - TimeoutSec * 1s + 15m))
+    | summarize TaskId = strcat_array(make_set(TaskId), ", ") by JobName, KilledAt;
+killed
+| join kind=leftouter killedTasks on JobName, KilledAt
+| project KilledAt, JobName, TaskId = iff(isempty(TaskId), "unknown", TaskId)

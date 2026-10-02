@@ -77,7 +77,7 @@
                     "memory": "64Gi"
                 },
                 "workload_profile": "large",
-                "timeout": 2400
+                "timeout": 3600
             }
         },
          "dedicated-larger": {
@@ -135,7 +135,7 @@
                     "GHA",
                     "UGA",
                     "ZMB",
-		            "ZWE"
+                    "ZWE"
                 ]
             },
             "wake_up": false
@@ -148,16 +148,17 @@
                     "MOZ"
                 ]
             },
-            "wake_up": false,
-            "extra_memory_override": true
+            "wake_up": false
         },
         "dedicated-larger": {
             "jobs": {
                 "fit": [
-                    "COD"
+                    "COD",
+                    "KEN"
                 ]
             },
-            "wake_up": false
+            "wake_up": false,
+            "extra_memory_override": true
         }
     }
 }

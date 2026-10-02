@@ -22,6 +22,12 @@ To deploy the containers
 ./start-containers
 ```
 
+To deploy alerts (Slack notifications, budget, metric and log alerts).
+
+```
+./start-alerts
+```
+
 ### User CLI
 
 This repo also contains a script that will run the the user CLI in a container instance connecting to the running database. Use this to create users, update password etc.
@@ -40,3 +46,13 @@ This just uses one big block of configuration I'd like to
 1. Split this up into more re-usable chunks (see network file for an example)
 2. Set up parameters so we could easily deploy a dev/production instance with chosen docker image tags and resources/scaling rules
 3. This won't redeploy if the docker container has been updated, only if the config itself has changed. How can I control this better?
+
+## Debugging
+
+For debugging it can be useful to get a connection to the running container app. You can do this as follows:
+
+```
+az containerapp exec -g nmHint-RG -n nm-hintr --command R
+```
+
+Note if the container app scales down to 0 then you will be disconnected, so you might want to increase it to 1 temporarily if doing debugging for any time.

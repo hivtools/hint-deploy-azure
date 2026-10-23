@@ -37,3 +37,11 @@ az stack group create \
   --parameters params/production/containers.bicepparam \
   --action-on-unmanage deleteResources \
   --deny-settings-mode none
+
+az stack group create \
+  --name $CONTAINERS_DEPLOYMENT_STACK \
+  --resource-group $HINT_RESOURCE_GROUP \
+  --template-file bicep/backup.bicep \
+  --parameters params/production/backup.bicepparam \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode none

@@ -11,5 +11,5 @@ az stack group create \
   --resource-group $BACKUP_RESOURCE_GROUP \
   --template-file bicep/backup.bicep \
   --parameters params/production/backup.bicepparam \
-  --action-on-unmanage deleteResources \
-  --deny-settings-mode none
+  --action-on-unmanage detachAll \
+  --deny-settings-mode denyDelete

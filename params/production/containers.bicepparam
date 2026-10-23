@@ -25,7 +25,7 @@ param activeJobsFunctionAppName = '${prefix}-active-jobs'
 param hintImage = 'ghcr.io/hivtools/hint:main'
 param hintrImage = 'ghcr.io/hivtools/hintr:main'
 param hintrWorkerImage = 'ghcr.io/hivtools/hintr-worker:main'
-param dbMigrateImage = 'ghcr.io/hivtools/hint-db-migrate:update-postgres'
+param dbMigrateImage = 'ghcr.io/hivtools/hint-db-migrate:main'
 
 param hintWebAppName = '${prefix}-naomi'
 param hintrName = '${prefix}-hintr'

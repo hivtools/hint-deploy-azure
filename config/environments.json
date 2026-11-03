@@ -1,0 +1,24 @@
+{
+    "production": {
+        "prefix": "nm",
+        "resourceGroup": "nmHint-RG",
+        "observabilityResourceGroup": "nmHint-logs-RG",
+        "backupResourceGroup": "nmHint-backup-RG",
+        "applicationUrl": "https://naomi.unaids.org",
+        "storageAccountName": "naomiappstorage",
+        "faBlobStorageAccountName": "naomifappstorage",
+        "fileShareAccessTier": "Premium",
+        "imageTag": "main"
+    },
+    "staging": {
+        "prefix": "nms",
+        "resourceGroup": "nmsHint-RG",
+        "observabilityResourceGroup": null,
+        "backupResourceGroup": null,
+        "applicationUrl": "",
+        "storageAccountName": "naomistagingappstorage",
+        "faBlobStorageAccountName": "naomistagingfappstorage",
+        "fileShareAccessTier": "Hot",
+        "imageTag": "staging"
+    }
+}

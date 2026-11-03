@@ -6,7 +6,7 @@
 param location string = resourceGroup().location
 
 @description('The prefix to use for all resource names')
-param prefix string = 'nm'
+param prefix string
 
 @description('The name of the external Azure Storage Account.')
 param storageAccountName string
@@ -22,6 +22,10 @@ param vnetName string
 
 @description('File shares to create and their sizes')
 param fileShares object
+
+@description('Access tier for the file shares')
+@allowed(['Premium', 'Hot', 'Cool', 'TransactionOptimized'])
+param fileShareAccessTier string
 
 resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
   name: vnetName
@@ -40,6 +44,7 @@ param storageSettings object = {
   storageAccountName: storageAccountName
   location: location
   fileShares: fileShares
+  fileShareAccessTier: fileShareAccessTier
 }
 
 module storageModule 'storage/file_shares.bicep' = {

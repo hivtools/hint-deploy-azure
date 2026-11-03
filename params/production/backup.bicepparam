@@ -1,8 +1,10 @@
 using '../../bicep/backup.bicep'
 
-param prefix = 'nm'
+var deploy_environment = readEnvironmentVariable('HINT_ENV') // disable-diagnostics
+var env = loadJsonContent('../../config/environments.json')[deploy_environment]
+param prefix = env.prefix
 
 param redisName = '${prefix}-hintr-queue'
 param hintResourceGroup = 'nmHint-RG'
-param storageAccountName = 'naomiappstorage'
+param storageAccountName = env.storageAccountName
 param postgresServerName = 'nm-hint-db'

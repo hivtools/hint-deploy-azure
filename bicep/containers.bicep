@@ -6,7 +6,7 @@
 param location string = resourceGroup().location
 
 @description('The prefix to use for all resource names')
-param prefix string = 'nm'
+param prefix string
 
 @description('Worker config to use')
 param workerConfigString string = loadTextContent('../config/workers.json')
@@ -66,6 +66,7 @@ param dbMigrateImage string
 module migradeDbModule 'app/migrate_db.bicep' = {
   name: 'migrateDb'
   params: {
+    prefix: prefix
     location: location
     vnetName: vnetName
     dbMigrateImage: dbMigrateImage
@@ -233,6 +234,7 @@ param hintrWorkerImage string
 module workerJobModule 'app/worker_job.bicep' = {
   name: 'workerJob'
   params: {
+    prefix: prefix
     location: location
     containerAppsEnvironmentName: containerAppsEnvironmentName
     hintrWorkerImage: hintrWorkerImage
@@ -259,6 +261,9 @@ param hintImage string
 
 @description('hint web app name')
 param hintWebAppName string = 'nm-naomi'
+
+@description('Public URL the hint web app is served from')
+param applicationUrl string
 
 @description('Storage account name')
 param storageAccountName string
@@ -304,7 +309,7 @@ resource hintWebApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'APPLICATION_URL'
-          value: 'https://naomi.unaids.org'
+          value: applicationUrl
         }
         {
           name: 'HINTR_URL'

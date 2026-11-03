@@ -1,11 +1,13 @@
 using '../../bicep/app_environment.bicep'
 
-param prefix = 'nm'
+var deploy_environment = readEnvironmentVariable('HINT_ENV')
+var env = loadJsonContent('../../config/environments.json')[deploy_environment]
+param prefix = env.prefix
 param vnetName = '${prefix}-hint-nw'
 
 param fileShares = ['uploads', 'results', 'config']
 
-param storageAccountName = 'naomiappstorage'
+param storageAccountName = env.storageAccountName
 param logAnalyticsWorkspaceName = 'naomiLogs'
 param logsResourceGroup = 'nmHint-logs-RG'
 param containerAppsEnvironmentName = '${prefix}-hint-env'

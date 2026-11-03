@@ -1,5 +1,5 @@
 @description('The prefix to use for all resource names')
-param prefix string = 'nm'
+param prefix string
 
 @description('The location where the resources will be created.')
 param location string = resourceGroup().location

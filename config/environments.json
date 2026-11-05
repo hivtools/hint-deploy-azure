@@ -8,7 +8,11 @@
         "storageAccountName": "naomiappstorage",
         "faBlobStorageAccountName": "naomifappstorage",
         "fileShareAccessTier": "Premium",
-        "imageTag": "main"
+        "hintAppServicePlanSku": "P0V3",
+        "hintrCpu": "2",
+        "hintrMemory": "4Gi",
+        "hintImageTag": "main",
+        "hintrImageTag": "main"
     },
     "staging": {
         "prefix": "nms",
@@ -19,6 +23,10 @@
         "storageAccountName": "naomistagingappstorage",
         "faBlobStorageAccountName": "naomistagingfappstorage",
         "fileShareAccessTier": "Hot",
-        "imageTag": "staging"
+        "hintAppServicePlanSku": "B1",
+        "hintrCpu": "0.75",
+        "hintrMemory": "1.5Gi",
+        "hintImageTag": "staging",
+        "hintrImageTag": "staging"
     }
 }

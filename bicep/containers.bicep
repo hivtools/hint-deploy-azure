@@ -91,7 +91,13 @@ param uploadsVolume string = 'uploads-volume'
 @description('Name of results volume')
 param resultsVolume string = 'results-volume'
 
-resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
+@description('hintr container CPU cores, as a string because Bicep has no decimal type, e.g. "0.5", "2"')
+param hintrCpu string
+
+@description('hintr container memory, e.g. "1Gi", "4Gi". Must be 2x CPU on the Consumption profile')
+param hintrMemory string
+
+resource hintr'Microsoft.App/containerApps@2024-03-01' = {
   name: hintrName
   location: location
   properties: {
@@ -136,8 +142,8 @@ resource hintr 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('2')
-            memory: '4Gi'
+            cpu: json(hintrCpu)
+            memory: hintrMemory
           }
           volumeMounts: [
             {

@@ -26,7 +26,7 @@
         "hintAppServicePlanSku": "B1",
         "hintrCpu": "0.75",
         "hintrMemory": "1.5Gi",
-        "hintImageTag": "staging",
-        "hintrImageTag": "staging"
+        "hintImageTag": "main",
+        "hintrImageTag": "main"
     }
 }

@@ -1,13 +1,16 @@
 @description('Storage settings object')
 param storageSettings object
 
+// Premium shares need a premium FileStorage account, other tiers need a standard StorageV2 account
+var isPremium = storageSettings.fileShareAccessTier == 'Premium'
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageSettings.storageAccountName
   location: storageSettings.location
   sku: {
-    name: 'Premium_ZRS'
+    name: isPremium ? 'Premium_ZRS' : 'Standard_LRS'
   }
-  kind: 'FileStorage'
+  kind: isPremium ? 'FileStorage' : 'StorageV2'
 }
 
 @description('Create file service')
@@ -29,7 +32,7 @@ resource fileShares 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-
   parent: fileService
   name: share.shareName
   properties: {
-    accessTier: 'Premium'
+    accessTier: storageSettings.fileShareAccessTier
     shareQuota: share.size
   }
 }]

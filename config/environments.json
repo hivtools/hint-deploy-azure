@@ -1,0 +1,32 @@
+{
+    "production": {
+        "prefix": "nm",
+        "resourceGroup": "nmHint-RG",
+        "observabilityResourceGroup": "nmHint-logs-RG",
+        "backupResourceGroup": "nmHint-backup-RG",
+        "applicationUrl": "https://naomi.unaids.org",
+        "storageAccountName": "naomiappstorage",
+        "faBlobStorageAccountName": "naomifappstorage",
+        "fileShareAccessTier": "Premium",
+        "hintAppServicePlanSku": "P0V3",
+        "hintrCpu": "2",
+        "hintrMemory": "4Gi",
+        "hintImageTag": "main",
+        "hintrImageTag": "main"
+    },
+    "staging": {
+        "prefix": "nms",
+        "resourceGroup": "nmsHint-RG",
+        "observabilityResourceGroup": null,
+        "backupResourceGroup": null,
+        "applicationUrl": "",
+        "storageAccountName": "naomistagingappstorage",
+        "faBlobStorageAccountName": "naomistagingfappstorage",
+        "fileShareAccessTier": "Hot",
+        "hintAppServicePlanSku": "B1",
+        "hintrCpu": "0.75",
+        "hintrMemory": "1.5Gi",
+        "hintImageTag": "main",
+        "hintrImageTag": "main"
+    }
+}

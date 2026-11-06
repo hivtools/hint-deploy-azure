@@ -5,6 +5,9 @@
 @description('The location where the resources will be created.')
 param location string = resourceGroup().location
 
+@description('The prefix to use for all resource names')
+param prefix string
+
 @description('Name of existing container apps environment')
 param containerAppsEnvironmentName string
 
@@ -59,7 +62,7 @@ var workers = [for worker in items(workerConfig.workers): {
 output workersOut object[] = workers
 
 resource hintrWorkerJobs 'Microsoft.App/jobs@2025-02-02-preview' = [for worker in workers: {
-  name: 'nm-hintr-${worker.name}-job'
+  name: '${prefix}-hintr-${worker.name}-job'
   location: location
   properties: {
     environmentId: containerAppsEnvironment.id

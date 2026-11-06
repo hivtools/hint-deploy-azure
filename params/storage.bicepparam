@@ -1,10 +1,14 @@
-using '../../bicep/storage.bicep'
+using '../bicep/storage.bicep'
+
+var deploy_environment = readEnvironmentVariable('HINT_ENV', 'staging')
+var env = loadJsonContent('../config/environments.json')[deploy_environment]
+param prefix = env.prefix
 
 param location = 'eastus2'
-param prefix = 'nm'
 param vnetName = '${prefix}-hint-nw'
 
-param storageAccountName = 'naomiappstorage'
+param storageAccountName = env.storageAccountName
+param fileShareAccessTier = env.fileShareAccessTier
 
 param adminDbPassword = readEnvironmentVariable('AVENIR_NM_DB_PASSWORD')
 param databaseName = 'hint'
@@ -28,5 +32,5 @@ param redisName = '${prefix}-hintr-queue'
 param redisDbName = 'default'
 param redisPrivateDnsZoneName = 'privatelink.eastus2.redis.azure.net'
 
-param faBlobStorageAccountName = 'naomifappstorage'
+param faBlobStorageAccountName = env.faBlobStorageAccountName
 param faStorageContainerName = 'active-jobs'

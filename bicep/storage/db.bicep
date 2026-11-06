@@ -2,7 +2,7 @@
 param location string = resourceGroup().location
 
 @description('The prefix to use for all resource names')
-param prefix string = 'nm'
+param prefix string
 
 @description('PostgreSQL server name')
 param postgresServerName string = '${prefix}-hint-db'

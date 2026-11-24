@@ -4,7 +4,7 @@ var deploy_environment = readEnvironmentVariable('HINT_ENV', 'staging')
 var env = loadJsonContent('../config/environments.json')[deploy_environment]
 param prefix = env.prefix
 
-param location = 'eastus2'
+param location = env.location
 param vnetName = '${prefix}-hint-nw'
 
 param storageAccountName = env.storageAccountName
@@ -30,7 +30,7 @@ param fileShares = {
 
 param redisName = '${prefix}-hintr-queue'
 param redisDbName = 'default'
-param redisPrivateDnsZoneName = 'privatelink.eastus2.redis.azure.net'
+param redisPrivateDnsZoneName = 'privatelink.${env.location}.redis.azure.net'
 
 param faBlobStorageAccountName = env.faBlobStorageAccountName
 param faStorageContainerName = 'active-jobs'

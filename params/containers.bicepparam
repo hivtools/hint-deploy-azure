@@ -18,7 +18,7 @@ param databaseName = 'hint'
 param postgresServerName = '${prefix}-hint-db'
 param redisName = '${prefix}-hintr-queue'
 param redisDbName = 'default'
-param redisPrivateDnsZoneName = 'privatelink.eastus2.redis.azure.net'
+param redisPrivateDnsZoneName = 'privatelink.${env.location}.redis.azure.net'
 
 param faBlobStorageAccountName = env.faBlobStorageAccountName
 param faStorageContainerName = 'active-jobs'

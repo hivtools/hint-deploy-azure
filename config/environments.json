@@ -1,6 +1,7 @@
 {
     "production": {
         "prefix": "nm",
+        "location": "eastus2",
         "resourceGroup": "nmHint-RG",
         "observabilityResourceGroup": "nmHint-logs-RG",
         "backupResourceGroup": "nmHint-backup-RG",
@@ -16,6 +17,7 @@
     },
     "staging": {
         "prefix": "nms",
+        "location": "centralus",
         "resourceGroup": "nmsHint-RG",
         "observabilityResourceGroup": null,
         "backupResourceGroup": null,

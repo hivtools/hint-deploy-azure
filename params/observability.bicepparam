@@ -1,3 +1,3 @@
-using '../../bicep/observability.bicep'
+using '../bicep/observability.bicep'
 
 param logAnalyticsWorkspaceName = 'naomiLogs'

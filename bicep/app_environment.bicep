@@ -35,10 +35,14 @@ module containerAppEnvironment 'app_environment/container_app_environment.bicep'
 @description('hint web app service plan name')
 param hintAppServicePlanName string
 
+@description('hint web app service plan SKU, e.g. B1, P0V3')
+param hintAppServicePlanSku string
+
 module webAppServicePlan 'app_environment/web_app_service_plan.bicep' = {
   name: 'webAppSP'
   params: {
     hintAppServicePlanName: hintAppServicePlanName
+    hintAppServicePlanSku: hintAppServicePlanSku
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     logsResourceGroup: logsResourceGroup
   }

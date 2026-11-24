@@ -6,7 +6,7 @@
 param location string = resourceGroup().location
 
 @description('The prefix to use for all resource names')
-param prefix string = 'nm'
+param prefix string
 
 @description('The name of the external Azure Storage Account.')
 param blobStorageAccountName string = 'naomibackupstorage'

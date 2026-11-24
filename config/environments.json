@@ -19,7 +19,7 @@
         "resourceGroup": "nmsHint-RG",
         "observabilityResourceGroup": null,
         "backupResourceGroup": null,
-        "applicationUrl": "",
+        "applicationUrl": "https://nms-naomi.azurewebsites.net",
         "storageAccountName": "naomistagingappstorage",
         "faBlobStorageAccountName": "naomistagingfappstorage",
         "fileShareAccessTier": "Hot",

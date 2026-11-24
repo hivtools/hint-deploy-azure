@@ -29,6 +29,8 @@ resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-08-01-preview' 
   parent: redis
   name: redisDbName
   properties: {
+    // Newer API versions default to Disabled; containers.bicep needs listKeys()
+    accessKeysAuthentication: 'Enabled'
     clientProtocol: 'Plaintext'
     clusteringPolicy: 'NoCluster'
     evictionPolicy: 'noeviction'
